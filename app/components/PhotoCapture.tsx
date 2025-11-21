@@ -12,6 +12,7 @@ interface PhotoCaptureProps {
 export default function PhotoCapture({ onCapture, onCancel, participantName }: PhotoCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -27,6 +28,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
             height: { ideal: 720 }
           }
         });
+        streamRef.current = mediaStream;
         setStream(mediaStream);
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -41,8 +43,8 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
 
     return () => {
       // Cleanup stream on unmount
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, []);
@@ -64,8 +66,8 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
       const photoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
       
       // Stop camera
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
 
       setTimeout(() => {
@@ -89,7 +91,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
           Capture Photo for {participantName}
         </h2>
         <p className="text-gray-600 mb-6">
-          Please position yourself in the frame and click "Capture Photo"
+          Please position yourself in the frame and click &quot;Capture Photo&quot;
         </p>
 
         {error && (
