@@ -12,9 +12,18 @@ export default function CheckInPage() {
   const [result, setResult] = useState<{
     success?: boolean;
     type?: string;
-    participant?: string;
+    participant?: string | {
+      id: string;
+      name: string;
+      email: string;
+      photo_url: string | null;
+      event_id?: string;
+    };
     message?: string;
     error?: string;
+    needsPhoto?: boolean;
+    needsVerification?: boolean;
+    eventLocation?: string | null;
   } | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
