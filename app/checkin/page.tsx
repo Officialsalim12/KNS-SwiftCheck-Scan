@@ -382,7 +382,11 @@ export default function CheckInPage() {
                       ✓ Checked In Successfully
                     </p>
                     {result.participant && (
-                      <p className="text-lg mt-2 font-medium">{result.participant}</p>
+                      <p className="text-lg mt-2 font-medium">
+                        {typeof result.participant === 'string' 
+                          ? result.participant 
+                          : result.participant.name}
+                      </p>
                     )}
                     <p className="text-sm mt-2">{result.message}</p>
                   </div>
