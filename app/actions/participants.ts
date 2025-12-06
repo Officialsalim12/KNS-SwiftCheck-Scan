@@ -320,30 +320,33 @@ export async function bulkCreateParticipantsFromFile(
 
       // Get values using normalized field names (from header mapping)
       // Try multiple possible field names to be more flexible
+      // Use type assertion to allow dynamic property access
+      const rowAny = row as any;
+      
       let name = (row.name || '').toString().trim();
       let email = (row.email || '').toString().trim();
       // Check for id_number, student_id, idnumber, id (in that order of preference)
-      let idNumber = (row.id_number || row.student_id || row.idnumber || row.id || '').toString().trim();
+      let idNumber = (row.id_number || rowAny.student_id || rowAny.idnumber || rowAny.id || '').toString().trim();
       
       // Fallback: if fields are empty, try to find them by searching all keys (case-insensitive)
       if (!name) {
         const nameKey = Object.keys(row).find(key => {
           const lower = key.toLowerCase();
           return lower.includes('name') && 
-                 !lower.includes('id') && 
+                 !lower.includes('id') &&
                  !lower.includes('number') &&
                  !lower.includes('school'); // Exclude "Name of Secondary School Attended"
         });
-        if (nameKey) name = String(row[nameKey] || '').trim();
+        if (nameKey) name = String(rowAny[nameKey] || '').trim();
       }
-      
+
       if (!email) {
         const emailKey = Object.keys(row).find(key => 
           key.toLowerCase().includes('email') || key.toLowerCase().includes('mail')
         );
-        if (emailKey) email = String(row[emailKey] || '').trim();
+        if (emailKey) email = String(rowAny[emailKey] || '').trim();
       }
-      
+
       if (!idNumber) {
         const idKey = Object.keys(row).find(key => {
           const lower = key.toLowerCase();
@@ -351,7 +354,7 @@ export async function bulkCreateParticipantsFromFile(
                  (lower.includes('id') && (lower.includes('number') || lower.includes('num'))) ||
                  lower === 'id' || lower === 'idnumber' || lower === 'student_id';
         });
-        if (idKey) idNumber = String(row[idKey] || '').trim();
+        if (idKey) idNumber = String(rowAny[idKey] || '').trim();
       }
 
       // Validate required fields - check if they're actually empty (not just whitespace)
