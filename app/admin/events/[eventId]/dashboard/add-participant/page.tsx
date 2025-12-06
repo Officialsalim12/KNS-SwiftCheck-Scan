@@ -319,7 +319,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                   Your file should have the following columns (first row should be headers):
                 </p>
                 <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
-                  <li><strong>name</strong> (required) - Participant's full name</li>
+                  <li><strong>name</strong> (required) - Participant&apos;s full name</li>
                   <li><strong>email</strong> (required) - Email address</li>
                   <li><strong>id_number</strong> (required) - Unique ID number</li>
                   <li><strong>phone</strong> (optional) - Phone number</li>
