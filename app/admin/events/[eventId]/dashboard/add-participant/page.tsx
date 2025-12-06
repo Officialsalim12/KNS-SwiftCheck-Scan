@@ -119,7 +119,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
         });
         setIsLoading(false);
         
-        if (result.created > 0) {
+        if ((result.created || 0) > 0 || (result.updated || 0) > 0) {
           setTimeout(() => {
             router.push(`/admin/events/${params.eventId}/dashboard/participants`);
           }, 3000);
