@@ -371,7 +371,7 @@ export async function bulkCreateParticipantsFromFile(
         
         // Show what fields were actually found and their values (first 50 chars)
         const foundFields = Object.keys(row).map(key => {
-          const val = String(row[key] || '').trim();
+          const val = String(rowAny[key] || '').trim();
           return `${key}: "${val.substring(0, 50)}${val.length > 50 ? '...' : ''}"`;
         }).join(', ');
         
