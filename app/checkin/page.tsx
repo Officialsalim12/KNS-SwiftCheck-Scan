@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats, CameraDevice } from 'html5-qrcode';
 import { checkIn, processCheckInWithPhoto, processCheckInVerified } from '@/app/actions/attendance';
 import { motion, AnimatePresence } from 'framer-motion';
 import PhotoCapture from '@/app/components/PhotoCapture';
 import VerificationModal from '@/app/components/VerificationModal';
 import LogoHeader from '@/app/components/LogoHeader';
+import { pickCameraIdByPreference, detectCameraFacing, CameraFacing } from '@/lib/cameraHelpers';
 
 export default function CheckInPage() {
   const [result, setResult] = useState<{
@@ -37,100 +38,201 @@ export default function CheckInPage() {
     photo_url: string | null;
     event_id?: string;
   } | null>(null);
-  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [manualId, setManualId] = useState('');
   const [manualError, setManualError] = useState<string | null>(null);
-  const [location, setLocation] = useState('');
-  const [eventLocation, setEventLocation] = useState<string | null>(null);
+  const [stationLocation, setStationLocation] = useState<string | null>(null);
+  const [stationLocationError, setStationLocationError] = useState<string | null>(null);
+  const [availableCameras, setAvailableCameras] = useState<CameraDevice[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [cameraPreference, setCameraPreference] = useState<CameraFacing>('back');
+  const [isCameraLoading, setIsCameraLoading] = useState(true);
+  const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
 
-  const stopScanner = async () => {
-    if (scannerRef.current) {
+  useEffect(() => {
+    let isMounted = true;
+    const fetchSessionLocation = async () => {
       try {
-        await scannerRef.current.clear();
-      } catch (e) {
-        console.error('Error clearing scanner:', e);
-      } finally {
-        scannerRef.current = null;
+        const response = await fetch('/api/event-session', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error('Failed to load session context');
+        }
+        const data = await response.json();
+        if (isMounted) {
+          setStationLocation(data?.session?.location ?? null);
+          setStationLocationError(null);
+        }
+      } catch {
+        if (isMounted) {
+          setStationLocation(null);
+          setStationLocationError('Unable to determine your current location. Please log in again and select a location.');
+        }
       }
+    };
+    fetchSessionLocation();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const stopScanner = async (silent = false) => {
+    if (html5QrCodeRef.current) {
+      try {
+        await html5QrCodeRef.current.stop();
+      } catch (e) {
+        if (!silent) {
+          console.error('Error stopping scanner:', e);
+        }
+      }
+      try {
+        await html5QrCodeRef.current.clear();
+      } catch (e) {
+        if (!silent) {
+          console.error('Error clearing scanner:', e);
+        }
+      }
+      html5QrCodeRef.current = null;
     }
     setIsScanning(false);
   };
 
-  const startScanner = () => {
-    // Clear any existing scanner
-    if (scannerRef.current) {
-      scannerRef.current.clear().catch(() => {
-        // Ignore cleanup errors
-      });
+  const prepareCameraDevices = async (): Promise<string | null> => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    try {
+      setIsCameraLoading(true);
+      const devices = await Html5Qrcode.getCameras();
+      setAvailableCameras(devices);
+      if (!devices.length) {
+        setError('No camera devices detected. Please connect a camera and refresh the page.');
+        return null;
+      }
+      const existingSelection =
+        selectedCameraId && devices.some((device) => device.id === selectedCameraId) ? selectedCameraId : null;
+      const preferredCameraId =
+        existingSelection ?? pickCameraIdByPreference(devices, cameraPreference) ?? devices[0].id ?? null;
+      if (preferredCameraId) {
+        setSelectedCameraId(preferredCameraId);
+      }
+      return preferredCameraId;
+    } catch (err: any) {
+      console.error('Unable to enumerate cameras', err);
+      setError(err?.message || 'Unable to load camera list. Check permissions and refresh the page.');
+      return null;
+    } finally {
+      setIsCameraLoading(false);
+    }
+  };
+
+  const startScanner = async (cameraIdOverride?: string) => {
+    if (typeof window === 'undefined') {
+      return;
     }
 
     setError(null);
-    setIsScanning(true);
+
+    const cameraId =
+      cameraIdOverride ||
+      selectedCameraId ||
+      (availableCameras.length ? pickCameraIdByPreference(availableCameras, cameraPreference) : await prepareCameraDevices());
+
+    if (!cameraId) {
+      setIsScanning(false);
+      return;
+    }
+
+    await stopScanner(true);
+    setIsSwitchingCamera(true);
 
     try {
-      const scanner = new Html5QrcodeScanner(
-        'qr-reader',
-        {
-          qrbox: { width: 300, height: 300 },
-          fps: 10,
-          aspectRatio: 1.0,
-        },
-        false // verbose
-      );
+      const scanner = new Html5Qrcode('qr-reader', {
+        verbose: false,
+        formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+      });
+      html5QrCodeRef.current = scanner;
 
-      scanner.render(
+      await scanner.start(
+        { deviceId: { exact: cameraId } },
+        { fps: 10, qrbox: { width: 300, height: 300 }, aspectRatio: 1.0 },
         async (decodedText) => {
-          await stopScanner();
+          await stopScanner(true);
           await processIdentifier(decodedText);
         },
         (errorMessage) => {
-          // Ignore scanning errors (they're normal during scanning)
-          // Only show error if it's a permission or setup issue
           if (
-            errorMessage.includes('Permission') ||
-            errorMessage.includes('NotAllowedError') ||
-            errorMessage.includes('NotFoundError')
+            typeof errorMessage === 'string' &&
+            (errorMessage.includes('Permission') ||
+              errorMessage.includes('NotAllowedError') ||
+              errorMessage.includes('NotFoundError'))
           ) {
             setError(errorMessage);
             setIsScanning(false);
           }
-        }
+        },
       );
 
-      scannerRef.current = scanner;
+      setSelectedCameraId(cameraId);
+      setIsScanning(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to initialize camera');
+      console.error('Failed to start camera', err);
+      setError(err?.message || 'Failed to initialize camera');
       setIsScanning(false);
+    } finally {
+      setIsSwitchingCamera(false);
     }
   };
 
   useEffect(() => {
-    // Start scanner when component mounts
-    startScanner();
+    let isMounted = true;
+
+    const initializeScanner = async () => {
+      const defaultCameraId = await prepareCameraDevices();
+      if (!isMounted || !defaultCameraId) return;
+      await startScanner(defaultCameraId);
+    };
+
+    initializeScanner();
 
     return () => {
-      // Cleanup on unmount
+      isMounted = false;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(() => {
-          // Ignore cleanup errors
-        });
-      }
+      stopScanner(true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleStartScan = () => {
+  const handleCameraSelection = async (deviceId: string) => {
+    if (!deviceId) return;
+    setSelectedCameraId(deviceId);
+    const selectedDevice = availableCameras.find((device) => device.id === deviceId);
+    const inferredFacing = detectCameraFacing(selectedDevice?.label);
+    if (inferredFacing !== 'unknown') {
+      setCameraPreference(inferredFacing);
+    }
+    await startScanner(deviceId);
+  };
+
+  const handleSwitchCamera = async () => {
+    const nextPreference: CameraFacing = cameraPreference === 'back' ? 'front' : 'back';
+    setCameraPreference(nextPreference);
+    const targetCameraId =
+      pickCameraIdByPreference(availableCameras, nextPreference) ?? (await prepareCameraDevices());
+    if (targetCameraId) {
+      await startScanner(targetCameraId);
+    }
+  };
+
+  const handleStartScan = async () => {
     setError(null);
     setResult(null);
     setShowPhotoCapture(false);
     setShowVerification(false);
     setCurrentParticipant(null);
-    setLocation(eventLocation || '');
-    startScanner();
+    await startScanner();
   };
 
   const processIdentifier = async (identifier: string) => {
@@ -155,15 +257,19 @@ export default function CheckInPage() {
         setIsProcessing(false);
         timeoutRef.current = setTimeout(() => {
           setResult(null);
-          startScanner();
+          void startScanner();
         }, 3000);
         return;
       }
 
-      // Store event location if available
-      if ('eventLocation' in scanResult && scanResult.eventLocation) {
-        setEventLocation(scanResult.eventLocation);
-        setLocation(scanResult.eventLocation);
+      // Store session location reported by the server, if available
+      if ('eventLocation' in scanResult) {
+        setStationLocation(scanResult.eventLocation ?? null);
+        setStationLocationError(
+          scanResult.eventLocation
+            ? null
+            : 'Location missing from session. Please log out and log back in with a location.',
+        );
       }
 
       if (scanResult.needsPhoto && scanResult.participant) {
@@ -179,16 +285,16 @@ export default function CheckInPage() {
         setIsProcessing(false);
         timeoutRef.current = setTimeout(() => {
           setResult(null);
-          startScanner();
+          void startScanner();
         }, 3000);
       }
     } catch (err: any) {
       setResult({ error: err.message || 'Failed to process check-in' });
       setIsProcessing(false);
-      timeoutRef.current = setTimeout(() => {
-        setResult(null);
-        startScanner();
-      }, 2000);
+        timeoutRef.current = setTimeout(() => {
+          setResult(null);
+          void startScanner();
+        }, 2000);
     }
   };
 
@@ -206,15 +312,14 @@ export default function CheckInPage() {
     setIsProcessing(true);
     
     try {
-      const result = await processCheckInWithPhoto(currentParticipant.id, photoDataUrl, location || undefined);
+      const result = await processCheckInWithPhoto(currentParticipant.id, photoDataUrl);
       setResult(result);
       setIsProcessing(false);
       
       timeoutRef.current = setTimeout(() => {
         setResult(null);
         setCurrentParticipant(null);
-        setLocation(eventLocation || '');
-        startScanner();
+        void startScanner();
       }, 3000);
     } catch (err: any) {
       setResult({ error: err.message || 'Failed to process check-in' });
@@ -222,8 +327,7 @@ export default function CheckInPage() {
       timeoutRef.current = setTimeout(() => {
         setResult(null);
         setCurrentParticipant(null);
-        setLocation(eventLocation || '');
-        startScanner();
+        void startScanner();
       }, 2000);
     }
   };
@@ -234,7 +338,7 @@ export default function CheckInPage() {
     setIsProcessing(true);
     
     try {
-      const result = await processCheckInVerified(currentParticipant.id, location || undefined);
+      const result = await processCheckInVerified(currentParticipant.id);
       setShowVerification(false);
       setResult(result);
       setIsProcessing(false);
@@ -242,8 +346,7 @@ export default function CheckInPage() {
       timeoutRef.current = setTimeout(() => {
         setResult(null);
         setCurrentParticipant(null);
-        setLocation(eventLocation || '');
-        startScanner();
+        void startScanner();
       }, 3000);
     } catch (err: any) {
       setResult({ error: err.message || 'Failed to process check-in' });
@@ -252,8 +355,7 @@ export default function CheckInPage() {
       timeoutRef.current = setTimeout(() => {
         setResult(null);
         setCurrentParticipant(null);
-        setLocation(eventLocation || '');
-        startScanner();
+        void startScanner();
       }, 2000);
     }
   };
@@ -262,10 +364,9 @@ export default function CheckInPage() {
     setShowVerification(false);
     setResult({ error: 'Check-in declined by reception' });
     setCurrentParticipant(null);
-    setLocation(eventLocation || '');
     timeoutRef.current = setTimeout(() => {
       setResult(null);
-      startScanner();
+      void startScanner();
     }, 3000);
   };
 
@@ -303,32 +404,75 @@ export default function CheckInPage() {
             </div>
           )}
 
-          <div id="qr-reader" className="mb-6 rounded-lg overflow-hidden"></div>
-
-          {/* Location Selection for Reception */}
-          {(showPhotoCapture || showVerification || currentParticipant) && (
-            <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-2">
-                Location (Required for Reception)
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="scanner-camera-select" className="block text-sm font-semibold text-gray-700 mb-1">
+                Camera Source
               </label>
-              <input
-                id="location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder={eventLocation ? `e.g., ${eventLocation} or enter second location` : 'Enter check-in location'}
-                required
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Enter the location where the participant is checking in. For events with multiple locations, specify which location.
+              <select
+                id="scanner-camera-select"
+                value={selectedCameraId ?? ''}
+                onChange={(e) => handleCameraSelection(e.target.value)}
+                disabled={isCameraLoading || isSwitchingCamera || availableCameras.length === 0}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+              >
+                {isCameraLoading && <option value="">Detecting cameras...</option>}
+                {!isCameraLoading && availableCameras.length === 0 && <option value="">No cameras detected</option>}
+                {!isCameraLoading && availableCameras.length > 0 && !selectedCameraId && (
+                  <option value="">Select a camera</option>
+                )}
+                {availableCameras.map((device) => (
+                  <option key={device.id} value={device.id}>
+                    {device.label || `Camera ${device.id.slice(0, 4)}`}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {isCameraLoading
+                  ? 'Looking for available cameras...'
+                  : selectedCameraId
+                  ? `Using ${
+                      availableCameras.find((device) => device.id === selectedCameraId)?.label || 'selected camera'
+                    }`
+                  : 'Select a camera to begin scanning'}
               </p>
             </div>
-          )}
+            <button
+              type="button"
+              onClick={handleSwitchCamera}
+              disabled={isCameraLoading || isSwitchingCamera || availableCameras.length <= 1}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-500 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+            >
+              Switch to {cameraPreference === 'back' ? 'Front' : 'Back'} Camera
+            </button>
+          </div>
+
+          <div className="mb-6 rounded-lg overflow-hidden border-2 border-blue-100 bg-gray-900 relative">
+            <div id="qr-reader" className="w-full min-h-[320px]"></div>
+            {isSwitchingCamera && (
+              <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center text-white font-semibold">
+                Switching camera...
+              </div>
+            )}
+          </div>
+
+          <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+            <p className="text-sm font-medium text-gray-700">Current Station Location</p>
+            <p className="text-lg font-semibold text-gray-900 mt-1">
+              {stationLocation || 'Not set'}
+            </p>
+            {stationLocationError ? (
+              <p className="text-xs text-red-600 mt-2">{stationLocationError}</p>
+            ) : (
+              <p className="text-xs text-gray-500 mt-2">
+                Need to change it? Log out and log back in with the correct location.
+              </p>
+            )}
+          </div>
 
           <form onSubmit={handleManualSubmit} className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
             <label htmlFor="manual-id" className="block text-sm font-medium text-gray-700">
-              Enter Participant ID Number
+              Participant ID Number
             </label>
             <div className="flex flex-col sm:flex-row gap-3">
               <input
@@ -349,7 +493,7 @@ export default function CheckInPage() {
             </div>
             {manualError && <p className="text-sm text-red-600">{manualError}</p>}
             <p className="text-xs text-gray-500">
-              Participants can now check in with either their QR code or assigned ID number.
+            check in Participants with either their QR code or ID number.
             </p>
           </form>
 

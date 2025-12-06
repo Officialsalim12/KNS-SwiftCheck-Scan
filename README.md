@@ -59,12 +59,16 @@ npm install
    -- Copy and paste the entire contents of database/add_event_type_column.sql
    ```
 4. If you set up the project before December 2025 (or created the database manually), run `database/add_location_column.sql` in the Supabase SQL Editor to add the `location` column that the admin UI requires:
+   ```sql
+   -- Copy and paste the entire contents of database/add_location_column.sql
+   ```
 5. If you see errors mentioning the missing `event_users` table (or if event logins always say the username/password is invalid), run `database/create_event_users_table.sql` to create the table that stores per-event usernames:
    ```sql
    -- Copy and paste the entire contents of database/create_event_users_table.sql
    ```
+6. If checkout attempts fail with `Could not find the 'checkout_location' column of 'attendance' in the schema cache`, run `database/add_checkout_location_column.sql` to add the column expected by the attendance actions:
    ```sql
-   -- Copy and paste the entire contents of database/add_location_column.sql
+   -- Copy and paste the entire contents of database/add_checkout_location_column.sql
    ```
 
 ### 4. Create Storage Buckets

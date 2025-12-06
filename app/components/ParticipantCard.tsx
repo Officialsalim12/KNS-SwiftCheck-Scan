@@ -59,24 +59,49 @@ export default function ParticipantCard({ participant }: ParticipantCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all duration-300">
-      <div className="mb-4">
+    <div className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 group h-full flex flex-col">
+      {/* Card Header with Gradient - Fixed Height */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 min-h-[80px] flex flex-col justify-center">
+        {participant.photo_url ? (
+          <div className="flex flex-col items-center">
+            <div className="flex justify-center mb-3">
+              <img
+                src={participant.photo_url}
+                alt={participant.name}
+                className="w-20 h-20 object-cover rounded-full border-4 border-white shadow-xl"
+              />
+            </div>
+            <h3 className="text-xl font-bold text-white text-center tracking-wider uppercase">
+              {participant.name}
+            </h3>
+          </div>
+        ) : (
+          <h3 className="text-xl font-bold text-white text-center tracking-wider uppercase">
+            {participant.name}
+          </h3>
+        )}
+      </div>
+
+      {/* Card Body - Flexible to fill remaining space */}
+      <div className="p-6 flex flex-col flex-grow">
         {participant.qr_code_url && (
-          <div className="flex flex-col items-center mb-4">
-            <img
-              src={participant.qr_code_url}
-              alt={`QR Code for ${participant.name}`}
-              width={150}
-              height={150}
-              className="border border-gray-200 rounded mb-3"
-            />
+          <div className="flex flex-col items-center mb-6 pb-6 border-b border-gray-200">
+            <div className="bg-white p-3 rounded-lg shadow-md mb-4">
+              <img
+                src={participant.qr_code_url}
+                alt={`QR Code for ${participant.name}`}
+                width={180}
+                height={180}
+                className="rounded"
+              />
+            </div>
             <button
               onClick={handleDownloadQR}
-              className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+              className="w-full px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white text-sm font-semibold rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -92,44 +117,49 @@ export default function ParticipantCard({ participant }: ParticipantCardProps) {
             </button>
           </div>
         )}
-        {participant.photo_url && (
-          <div className="mb-4 flex justify-center">
-            <img
-              src={participant.photo_url}
-              alt={participant.name}
-              className="w-24 h-24 object-cover rounded-full border-4 border-blue-500 shadow-lg"
-            />
+
+        {/* Participant Details - Consistent spacing */}
+        <div className="space-y-3 flex-grow">
+          <div className="flex items-start min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0">Email:</span>
+            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">{participant.email}</span>
           </div>
-        )}
-        <h3 className="text-xl font-semibold text-gray-900 mb-2 text-center">
-          {participant.name}
-        </h3>
-        <p className="text-sm text-gray-600 mb-1">
-          <span className="font-medium">Email:</span> {participant.email}
-        </p>
-        {participant.id_number && (
-          <p className="text-sm text-gray-600 mb-1">
-            <span className="font-medium">ID Number:</span> {participant.id_number}
+
+          <div className="flex items-start min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0">ID Number:</span>
+            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">
+              {participant.id_number || <span className="text-gray-400 italic">N/A</span>}
+            </span>
+          </div>
+
+          <div className="flex items-start min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0">Phone:</span>
+            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">
+              {participant.phone || <span className="text-gray-400 italic">N/A</span>}
+            </span>
+          </div>
+
+          <div className="flex items-start min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0">Organization:</span>
+            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">
+              {participant.organization || <span className="text-gray-400 italic">N/A</span>}
+            </span>
+          </div>
+
+          {participant.table_number && (
+            <div className="flex items-start min-h-[24px] gap-1">
+              <span className="font-bold text-gray-700 flex-shrink-0">Table Number:</span>
+              <span className="text-gray-600 text-sm flex-1 break-words min-w-0">{participant.table_number}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer - Fixed at bottom */}
+        <div className="mt-auto pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-400 text-center">
+            Created: {formatDate(participant.created_at)}
           </p>
-        )}
-        {participant.phone && (
-          <p className="text-sm text-gray-600 mb-1">
-            <span className="font-medium">Phone:</span> {participant.phone}
-          </p>
-        )}
-        {participant.organization && (
-          <p className="text-sm text-gray-600 mb-1">
-            <span className="font-medium">Organization:</span> {participant.organization}
-          </p>
-        )}
-        {participant.table_number && (
-          <p className="text-sm text-gray-600 mb-1">
-            <span className="font-medium">Table Number:</span> {participant.table_number}
-          </p>
-        )}
-        <p className="text-xs text-gray-400 mt-2">
-          Created: {formatDate(participant.created_at)}
-        </p>
+        </div>
       </div>
     </div>
   );

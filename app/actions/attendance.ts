@@ -3,6 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
 import { sendCheckInEmail, sendCheckOutEmail } from '@/lib/email';
+import { EventSession, getEventSession } from '@/app/actions/event-auth';
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -49,6 +50,43 @@ async function findParticipantByIdentifier(identifier: string) {
     console.error('Participant lookup error:', error);
     return { participant: null, error: error.message || 'Failed to find participant' };
   }
+}
+
+type SessionContextResult =
+  | {
+      session: EventSession;
+    }
+  | { error: string };
+
+type SessionLocationContextResult =
+  | {
+      session: EventSession;
+      location: string;
+    }
+  | { error: string };
+
+async function requireSessionContext(): Promise<SessionContextResult> {
+  const session = await getEventSession();
+  if (!session?.eventId || !session?.username) {
+    return {
+      error: 'Please log in to your event dashboard before recording attendance.',
+    };
+  }
+  return { session };
+}
+
+async function requireSessionContextWithLocation(): Promise<SessionLocationContextResult> {
+  const base = await requireSessionContext();
+  if ('error' in base) {
+    return base;
+  }
+  const location = base.session.location?.trim();
+  if (!location) {
+    return {
+      error: 'Location not set for this session. Please log out and log back in with your station location.',
+    };
+  }
+  return { session: base.session, location };
 }
 
 /**
@@ -113,34 +151,22 @@ async function hasCheckedInToday(participantId: string): Promise<boolean> {
   }
 }
 
-// Helper function to get event location(s)
-async function getEventLocation(eventId: string): Promise<string | null> {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('events')
-      .select('location')
-      .eq('id', eventId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching event location:', error);
-      return null;
-    }
-
-    return data?.location || null;
-  } catch (error) {
-    console.error('Error in getEventLocation:', error);
-    return null;
-  }
-}
-
 // Dedicated check-in function
 export async function checkIn(identifier: string) {
   try {
+    const sessionContext = await requireSessionContextWithLocation();
+    if ('error' in sessionContext) {
+      return { error: sessionContext.error };
+    }
+
     const { participant, error } = await findParticipantByIdentifier(identifier);
 
     if (error || !participant) {
       return { error: error || 'Participant not found.' };
+    }
+
+    if (participant.event_id && participant.event_id !== sessionContext.session.eventId) {
+      return { error: 'This participant is not registered for your event.' };
     }
 
     // Check if already checked in today
@@ -151,9 +177,6 @@ export async function checkIn(identifier: string) {
 
     // Check if this is first time check-in (no photo)
     const isFirstTime = !participant.photo_url;
-
-    // Get event location for display
-    const eventLocation = participant.event_id ? await getEventLocation(participant.event_id) : null;
 
     // Return participant info for photo capture or verification
     return {
@@ -166,7 +189,7 @@ export async function checkIn(identifier: string) {
         photo_url: participant.photo_url,
         event_id: participant.event_id,
       },
-      eventLocation,
+      eventLocation: sessionContext.location,
     };
   } catch (error: any) {
     console.error('Error checking in:', error);
@@ -175,8 +198,13 @@ export async function checkIn(identifier: string) {
 }
 
 // Process check-in with photo (first time)
-export async function processCheckInWithPhoto(participantId: string, photoDataUrl: string, location?: string) {
+export async function processCheckInWithPhoto(participantId: string, photoDataUrl: string) {
   try {
+    const sessionContext = await requireSessionContextWithLocation();
+    if ('error' in sessionContext) {
+      return { error: sessionContext.error };
+    }
+
     const cleanedId = participantId.trim();
     
     // Check if already checked in today
@@ -191,6 +219,10 @@ export async function processCheckInWithPhoto(participantId: string, photoDataUr
       .select('name, email, event_id')
       .eq('id', cleanedId)
       .single();
+
+    if (participant?.event_id && participant.event_id !== sessionContext.session.eventId) {
+      return { error: 'This participant is not registered for your event.' };
+    }
     
     // Upload photo
     const photoUrl = await uploadPhoto(cleanedId, photoDataUrl);
@@ -203,20 +235,14 @@ export async function processCheckInWithPhoto(participantId: string, photoDataUr
 
     if (updateError) throw updateError;
 
-    // Get event location if not provided
-    let checkInLocation = location?.trim() || null;
-    if (!checkInLocation && participant?.event_id) {
-      checkInLocation = await getEventLocation(participant.event_id);
-    }
-
     // Create check-in record with location
     const { error: checkinError } = await supabaseAdmin
       .from('attendance')
       .insert({
         participant_id: cleanedId,
-        event_id: participant?.event_id || null,
+        event_id: sessionContext.session.eventId,
         check_in_time: new Date().toISOString(),
-        location: checkInLocation,
+        location: sessionContext.location,
       });
 
     if (checkinError) throw checkinError;
@@ -230,9 +256,7 @@ export async function processCheckInWithPhoto(participantId: string, photoDataUr
 
     // Revalidate attendance and dashboard pages
     revalidatePath('/admin/attendance');
-    if (participant?.event_id) {
-      revalidatePath(`/admin/events/${participant.event_id}/dashboard`);
-    }
+    revalidatePath(`/admin/events/${sessionContext.session.eventId}/dashboard`);
     return { 
       success: true, 
       type: 'checkin',
@@ -245,8 +269,13 @@ export async function processCheckInWithPhoto(participantId: string, photoDataUr
 }
 
 // Process check-in after verification (subsequent check-ins)
-export async function processCheckInVerified(participantId: string, location?: string) {
+export async function processCheckInVerified(participantId: string) {
   try {
+    const sessionContext = await requireSessionContextWithLocation();
+    if ('error' in sessionContext) {
+      return { error: sessionContext.error };
+    }
+
     const cleanedId = participantId.trim();
     
     // Check if already checked in today
@@ -262,10 +291,8 @@ export async function processCheckInVerified(participantId: string, location?: s
       .eq('id', cleanedId)
       .single();
 
-    // Get event location if not provided
-    let checkInLocation = location?.trim() || null;
-    if (!checkInLocation && participant?.event_id) {
-      checkInLocation = await getEventLocation(participant.event_id);
+    if (participant?.event_id && participant.event_id !== sessionContext.session.eventId) {
+      return { error: 'This participant is not registered for your event.' };
     }
 
     // Create check-in record with location
@@ -273,9 +300,9 @@ export async function processCheckInVerified(participantId: string, location?: s
       .from('attendance')
       .insert({
         participant_id: cleanedId,
-        event_id: participant?.event_id || null,
+        event_id: sessionContext.session.eventId,
         check_in_time: new Date().toISOString(),
-        location: checkInLocation,
+        location: sessionContext.location,
       });
 
     if (checkinError) throw checkinError;
@@ -289,9 +316,7 @@ export async function processCheckInVerified(participantId: string, location?: s
 
     // Revalidate attendance and dashboard pages
     revalidatePath('/admin/attendance');
-    if (participant?.event_id) {
-      revalidatePath(`/admin/events/${participant.event_id}/dashboard`);
-    }
+    revalidatePath(`/admin/events/${sessionContext.session.eventId}/dashboard`);
     return { 
       success: true, 
       type: 'checkin',
@@ -335,6 +360,11 @@ async function hasCheckedOutToday(participantId: string): Promise<boolean> {
 // Dedicated check-out function
 export async function checkOut(identifier: string) {
   try {
+    const sessionContext = await requireSessionContextWithLocation();
+    if ('error' in sessionContext) {
+      return { error: sessionContext.error };
+    }
+
     const { participant, error } = await findParticipantByIdentifier(identifier);
 
     if (error || !participant) {
@@ -342,6 +372,10 @@ export async function checkOut(identifier: string) {
     }
 
     const cleanedId = participant.id;
+
+    if (participant.event_id && participant.event_id !== sessionContext.session.eventId) {
+      return { error: 'This participant is not registered for your event.' };
+    }
 
     // Check if already checked out today
     const alreadyCheckedOut = await hasCheckedOutToday(cleanedId);
@@ -354,6 +388,7 @@ export async function checkOut(identifier: string) {
       .from('attendance')
       .select('*')
       .eq('participant_id', cleanedId)
+      .eq('event_id', sessionContext.session.eventId)
       .is('check_out_time', null)
       .order('check_in_time', { ascending: false })
       .limit(1)
@@ -367,7 +402,10 @@ export async function checkOut(identifier: string) {
       // Update the latest check-in with check-out time
       const { error: checkoutError } = await supabaseAdmin
         .from('attendance')
-        .update({ check_out_time: new Date().toISOString() })
+        .update({
+          check_out_time: new Date().toISOString(),
+          checkout_location: sessionContext.location,
+        })
         .eq('id', latestCheckIn.id);
 
       if (checkoutError) throw checkoutError;
@@ -381,9 +419,7 @@ export async function checkOut(identifier: string) {
 
       // Revalidate attendance and dashboard pages
       revalidatePath('/admin/attendance');
-      if (latestCheckIn.event_id) {
-        revalidatePath(`/admin/events/${latestCheckIn.event_id}/dashboard`);
-      }
+      revalidatePath(`/admin/events/${sessionContext.session.eventId}/dashboard`);
       return { 
         success: true, 
         type: 'checkout',

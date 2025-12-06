@@ -96,7 +96,13 @@ export async function createEvent(formData: FormData) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      // Handle unique constraint violation more gracefully
+      if (error.code === '23505' && error.message?.includes('username')) {
+        throw new Error('This username is already in use. Please note: The same person can create multiple events, but there may be a database constraint. Please contact support if this persists.');
+      }
+      throw error;
+    }
 
     if (uniqueUsernames.length) {
       const userRows = uniqueUsernames.map((username) => ({
@@ -140,7 +146,7 @@ export async function getEventById(eventId: string) {
   try {
     const { data, error } = await supabaseAdmin
       .from('events')
-      .select('*, organizations(name)')
+      .select('*, organizations(name), event_users(username, id)')
       .eq('id', eventId)
       .single();
 
@@ -186,6 +192,144 @@ export async function verifyEventCredentials(
   } catch (error: any) {
     console.error('Error verifying event credentials:', error);
     return { valid: false, event: null };
+  }
+}
+
+export async function updateEvent(eventId: string, formData: FormData) {
+  const name = (formData.get('name') as string)?.trim();
+  const description = (formData.get('description') as string) || '';
+  const password = (formData.get('password') as string)?.trim();
+  const startDate = formData.get('start_date') as string;
+  const endDate = formData.get('end_date') as string;
+  const organizationName = (formData.get('organization_name') as string)?.trim();
+  const selectedEventType = formData.get('event_type') as string;
+  const otherEventType = (formData.get('event_type_other') as string)?.trim();
+  const location = (formData.get('location') as string)?.trim();
+
+  const usernameFields = ['username', 'username_2', 'username_3', 'username_4', 'username_5'];
+  const usernames = usernameFields
+    .map((field) => (formData.get(field) as string)?.trim())
+    .filter((value): value is string => Boolean(value));
+  const uniqueUsernames = Array.from(new Set(usernames));
+
+  if (!eventId) {
+    return { error: 'Event ID is required' };
+  }
+
+  if (!name) {
+    return { error: 'Event name is required' };
+  }
+
+  if (uniqueUsernames.length === 0) {
+    return { error: 'At least one username is required' };
+  }
+
+  if (uniqueUsernames.length > 5) {
+    return { error: 'You can only provide up to five usernames' };
+  }
+
+  if (!organizationName) {
+    return { error: 'Organization is required' };
+  }
+
+  if (!location) {
+    return { error: 'Event location is required' };
+  }
+
+  if (!selectedEventType) {
+    return { error: 'Event type is required' };
+  }
+
+  let finalEventType = selectedEventType;
+  if (selectedEventType === 'Other') {
+    if (!otherEventType) {
+      return { error: 'Please specify the event type' };
+    }
+    finalEventType = otherEventType;
+  }
+
+  try {
+    const { data: existingEvent, error: fetchError } = await supabaseAdmin
+      .from('events')
+      .select('id')
+      .eq('id', eventId)
+      .single();
+
+    if (fetchError || !existingEvent) {
+      return { error: 'Event not found' };
+    }
+
+    // Find or create organization
+    let organizationId: string | null = null;
+
+    const { data: existingOrganizations, error: organizationLookupError } = await supabaseAdmin
+      .from('organizations')
+      .select('id')
+      .eq('name', organizationName)
+      .limit(1);
+
+    if (organizationLookupError) throw organizationLookupError;
+
+    if (existingOrganizations && existingOrganizations.length > 0) {
+      organizationId = existingOrganizations[0].id;
+    } else {
+      const { data: newOrganization, error: createOrganizationError } = await supabaseAdmin
+        .from('organizations')
+        .insert({ name: organizationName })
+        .select('id')
+        .single();
+
+      if (createOrganizationError) throw createOrganizationError;
+      organizationId = newOrganization.id;
+    }
+
+    const updatePayload: Record<string, any> = {
+      organization_id: organizationId,
+      name,
+      description: description || null,
+      username: uniqueUsernames[0],
+      start_date: startDate || null,
+      end_date: endDate || null,
+      location,
+      event_type: finalEventType || null,
+    };
+
+    if (password) {
+      updatePayload.password_hash = await bcrypt.hash(password, 10);
+    }
+
+    const { error: updateError } = await supabaseAdmin
+      .from('events')
+      .update(updatePayload)
+      .eq('id', eventId);
+
+    if (updateError) {
+      // Handle unique constraint violation more gracefully
+      if (updateError.code === '23505' && updateError.message?.includes('username')) {
+        throw new Error('This username is already in use. Please note: The same person can create multiple events, but there may be a database constraint. Please contact support if this persists.');
+      }
+      throw updateError;
+    }
+
+    const { error: deleteUsersError } = await supabaseAdmin.from('event_users').delete().eq('event_id', eventId);
+    if (deleteUsersError) throw deleteUsersError;
+
+    const userRows = uniqueUsernames.map((username) => ({
+      event_id: eventId,
+      username,
+    }));
+
+    const { error: insertUsersError } = await supabaseAdmin.from('event_users').insert(userRows);
+    if (insertUsersError) throw insertUsersError;
+
+    revalidatePath('/admin');
+    revalidatePath(`/admin/events/${eventId}/dashboard`);
+    revalidatePath(`/admin/events/${eventId}/dashboard/settings`);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error updating event:', error);
+    return { error: error.message || 'Failed to update event' };
   }
 }
 
