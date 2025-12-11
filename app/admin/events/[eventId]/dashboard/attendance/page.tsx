@@ -29,7 +29,7 @@ export default async function EventAttendancePage({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Header Section */}
         <div className="mb-8">
           <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -83,7 +83,7 @@ export default async function EventAttendancePage({
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 border border-gray-100">
             <AttendanceTable logs={logs as AttendanceLog[]} eventName={event?.name || 'Event'} />
           </div>
         )}

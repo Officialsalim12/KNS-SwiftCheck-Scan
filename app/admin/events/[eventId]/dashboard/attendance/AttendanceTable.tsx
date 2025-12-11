@@ -9,16 +9,24 @@ interface AttendanceTableProps {
   eventName: string;
 }
 
+/**
+ * Extracts and formats the date part from a timestamp.
+ * @param dateString - ISO date string
+ * @returns Date string in YYYY-MM-DD format, or empty string if invalid
+ */
 function getDateKey(dateString: string | null): string {
   if (!dateString) return '';
   try {
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+    return date.toISOString().split('T')[0];
   } catch {
     return '';
   }
 }
 
+/**
+ * Formats a timestamp to a 12-hour time string (e.g., "02:30 PM").
+ */
 function formatTimeOnly(value: string | null) {
   if (!value) return '';
   try {
@@ -40,27 +48,23 @@ type ParticipantDayData = {
 export default function AttendanceTable({ logs, eventName }: AttendanceTableProps) {
   const [query, setQuery] = useState('');
 
-  // Process logs to group by participant and day
+  // Optimize data processing for the table view
   const { participants, sortedDays } = useMemo(() => {
-    // Get all unique dates from check-in times
     const dateSet = new Set<string>();
+
+    // 1. Collect all unique dates
     logs.forEach((log) => {
       if (log.check_in_time) {
         const dateKey = getDateKey(log.check_in_time);
-        if (dateKey) {
-          dateSet.add(dateKey);
-        }
+        if (dateKey) dateSet.add(dateKey);
       }
     });
 
-    // Sort dates chronologically
     const sortedDates = Array.from(dateSet).sort();
     const dateToDayMap = new Map<string, number>();
-    sortedDates.forEach((date, index) => {
-      dateToDayMap.set(date, index + 1);
-    });
+    sortedDates.forEach((date, index) => dateToDayMap.set(date, index + 1));
 
-    // Group logs by participant
+    // 2. Map logs to participants and days
     const participantMap = new Map<string, ParticipantDayData>();
 
     logs.forEach((log) => {
@@ -85,7 +89,8 @@ export default function AttendanceTable({ logs, eventName }: AttendanceTableProp
         }
 
         const dayData = participant.days.get(dayNum)!;
-        // Use first check-in time (earliest)
+
+        // Track earliest check-in
         if (log.check_in_time) {
           try {
             const checkInDate = new Date(log.check_in_time);
@@ -94,10 +99,11 @@ export default function AttendanceTable({ logs, eventName }: AttendanceTableProp
               dayData.checkIn = formatTimeOnly(log.check_in_time);
             }
           } catch {
-            // If parsing fails, skip
+            // Ignore invalid dates
           }
         }
-        // Use last check-out time (latest)
+
+        // Track latest check-out
         if (log.check_out_time) {
           try {
             const checkOutDate = new Date(log.check_out_time);
@@ -106,7 +112,7 @@ export default function AttendanceTable({ logs, eventName }: AttendanceTableProp
               dayData.checkOut = formatTimeOnly(log.check_out_time);
             }
           } catch {
-            // If parsing fails, skip
+            // Ignore invalid dates
           }
         }
       }
@@ -137,7 +143,6 @@ export default function AttendanceTable({ logs, eventName }: AttendanceTableProp
 
   return (
     <div className="space-y-6">
-      {/* Event Name in Block Letters */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-center shadow-lg">
         <h2 className="text-3xl font-bold text-white tracking-wider uppercase">
           {eventName}
@@ -202,7 +207,7 @@ export default function AttendanceTable({ logs, eventName }: AttendanceTableProp
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-gray-200 shadow-lg">
+        <div className="overflow-hidden rounded-xl border border-gray-200 shadow-lg -mx-2 md:mx-0">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gradient-to-r from-blue-600 to-indigo-600">

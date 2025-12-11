@@ -14,11 +14,11 @@ interface VerificationModalProps {
   isProcessing: boolean;
 }
 
-export default function VerificationModal({ 
-  participant, 
-  onApprove, 
-  onDecline, 
-  isProcessing 
+export default function VerificationModal({
+  participant,
+  onApprove,
+  onDecline,
+  isProcessing
 }: VerificationModalProps) {
   return (
     <motion.div
@@ -68,18 +68,18 @@ export default function VerificationModal({
           </p>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col-reverse sm:flex-row gap-4">
           <button
             onClick={onDecline}
             disabled={isProcessing}
-            className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed text-center"
           >
             Decline
           </button>
           <button
             onClick={onApprove}
             disabled={isProcessing}
-            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed text-center"
           >
             {isProcessing ? 'Processing...' : 'Approve'}
           </button>

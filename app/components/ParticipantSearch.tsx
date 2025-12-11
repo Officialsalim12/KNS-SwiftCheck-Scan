@@ -96,7 +96,7 @@ export default function ParticipantSearch({ participants }: ParticipantSearchPro
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: '1fr' }}>
+        <div className="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3" style={{ gridAutoRows: '1fr' }}>
           {filteredParticipants.map((participant) => (
             <ParticipantCard key={participant.id} participant={participant} />
           ))}

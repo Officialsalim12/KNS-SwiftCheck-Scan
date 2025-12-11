@@ -55,7 +55,7 @@ export default async function EventSettingsPage({
         </div>
 
         {/* Form Section */}
-        <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
+        <div className="bg-white rounded-2xl shadow-xl p-5 md:p-8 border border-gray-100">
           <EditEventForm event={event} />
         </div>
       </div>

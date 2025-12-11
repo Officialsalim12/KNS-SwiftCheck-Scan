@@ -29,8 +29,8 @@ export default async function EventParticipantsPage({
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 px-4 py-8">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        <div className="mb-6 md:mb-8">
+          <div className="bg-white rounded-2xl shadow-xl p-5 md:p-8 border border-gray-100">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
@@ -115,7 +115,7 @@ export default async function EventParticipantsPage({
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
+          <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 border border-gray-100">
             <ParticipantSearch participants={participants} />
           </div>
         )}

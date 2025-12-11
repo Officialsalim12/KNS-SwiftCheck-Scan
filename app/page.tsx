@@ -13,23 +13,23 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            SWIFTCHECK SCAN 
+        <div className="text-center mb-12 md:mb-16">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 md:mb-6">
+            SWIFTCHECK SCAN
           </h1>
-          <p className="text-xl md:text-2xl text-gray-600 mb-4 max-w-3xl mx-auto">
+          <p className="text-lg md:text-xl lg:text-2xl text-gray-600 mb-4 max-w-3xl mx-auto px-2">
             Modern QR Code-based attendance management system
           </p>
-          <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-gray-500 max-w-2xl mx-auto px-2">
             Streamline your Event sessions with seamless check-in and check-out processes
           </p>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-20">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16 md:mb-20 px-4">
           <Link
             href="/login"
-            className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center font-semibold text-lg"
+            className="group relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-center font-semibold text-lg"
           >
             <div className="flex items-center justify-center gap-3">
               <svg
@@ -130,17 +130,17 @@ export default function Home() {
         </div>
 
         {/* Additional Info Section */}
-        <div className="mt-20 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-2xl p-12 text-center text-white">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+        <div className="mt-16 md:mt-20 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-2xl p-6 md:p-12 text-center text-white">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">
             Streamline Your Event Sessions
           </h2>
-          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Experience seamless attendance management with our modern, secure, and user-friendly system.
           </p>
           <div className="flex justify-center">
             <Link
               href="/login"
-              className="px-8 py-3 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold"
+              className="w-full sm:w-auto px-8 py-3 bg-transparent border-2 border-white text-white rounded-lg hover:bg-white hover:text-blue-600 transition-colors font-semibold"
             >
               System Access
             </Link>

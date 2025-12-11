@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import { Html5Qrcode, Html5QrcodeSupportedFormats, CameraDevice } from 'html5-qrcode';
 import { checkIn, processCheckInWithPhoto, processCheckInVerified } from '@/app/actions/attendance';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,7 +49,9 @@ export default function CheckInPage() {
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [cameraPreference, setCameraPreference] = useState<CameraFacing>('back');
   const [isCameraLoading, setIsCameraLoading] = useState(true);
+
   const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
+  const [eventId, setEventId] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -61,6 +64,7 @@ export default function CheckInPage() {
         const data = await response.json();
         if (isMounted) {
           setStationLocation(data?.session?.location ?? null);
+          setEventId(data?.session?.eventId ?? null);
           setStationLocationError(null);
         }
       } catch {
@@ -291,10 +295,10 @@ export default function CheckInPage() {
     } catch (err: any) {
       setResult({ error: err.message || 'Failed to process check-in' });
       setIsProcessing(false);
-        timeoutRef.current = setTimeout(() => {
-          setResult(null);
-          void startScanner();
-        }, 2000);
+      timeoutRef.current = setTimeout(() => {
+        setResult(null);
+        void startScanner();
+      }, 2000);
     }
   };
 
@@ -307,15 +311,15 @@ export default function CheckInPage() {
 
   const handlePhotoCapture = async (photoDataUrl: string) => {
     if (!currentParticipant) return;
-    
+
     setShowPhotoCapture(false);
     setIsProcessing(true);
-    
+
     try {
       const result = await processCheckInWithPhoto(currentParticipant.id, photoDataUrl);
       setResult(result);
       setIsProcessing(false);
-      
+
       timeoutRef.current = setTimeout(() => {
         setResult(null);
         setCurrentParticipant(null);
@@ -334,15 +338,15 @@ export default function CheckInPage() {
 
   const handleVerificationApprove = async () => {
     if (!currentParticipant) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       const result = await processCheckInVerified(currentParticipant.id);
       setShowVerification(false);
       setResult(result);
       setIsProcessing(false);
-      
+
       timeoutRef.current = setTimeout(() => {
         setResult(null);
         setCurrentParticipant(null);
@@ -378,183 +382,205 @@ export default function CheckInPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-xl p-8 border-2 border-blue-200"
+            className="bg-white rounded-xl shadow-xl p-5 md:p-8 border-2 border-blue-200"
           >
-            <h1 className="text-4xl font-bold text-center mb-2 text-blue-600">
-              Check In
-            </h1>
-            <p className="text-center text-gray-600 mb-8 text-lg">Scan QR code to check in</p>
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 text-red-800 rounded-lg">
-              <p className="font-semibold mb-2 text-lg">Camera Error</p>
-              <p className="text-sm mb-3">{error}</p>
-              <button
-                onClick={handleStartScan}
-                className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors font-semibold"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
-
-          {isProcessing && !showPhotoCapture && !showVerification && (
-            <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-300 text-blue-800 rounded-lg text-center">
-              <p className="font-semibold text-lg">Processing check-in...</p>
-            </div>
-          )}
-
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="scanner-camera-select" className="block text-sm font-semibold text-gray-700 mb-1">
-                Camera Source
-              </label>
-              <select
-                id="scanner-camera-select"
-                value={selectedCameraId ?? ''}
-                onChange={(e) => handleCameraSelection(e.target.value)}
-                disabled={isCameraLoading || isSwitchingCamera || availableCameras.length === 0}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-              >
-                {isCameraLoading && <option value="">Detecting cameras...</option>}
-                {!isCameraLoading && availableCameras.length === 0 && <option value="">No cameras detected</option>}
-                {!isCameraLoading && availableCameras.length > 0 && !selectedCameraId && (
-                  <option value="">Select a camera</option>
-                )}
-                {availableCameras.map((device) => (
-                  <option key={device.id} value={device.id}>
-                    {device.label || `Camera ${device.id.slice(0, 4)}`}
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                {isCameraLoading
-                  ? 'Looking for available cameras...'
-                  : selectedCameraId
-                  ? `Using ${
-                      availableCameras.find((device) => device.id === selectedCameraId)?.label || 'selected camera'
-                    }`
-                  : 'Select a camera to begin scanning'}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleSwitchCamera}
-              disabled={isCameraLoading || isSwitchingCamera || availableCameras.length <= 1}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-500 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              Switch to {cameraPreference === 'back' ? 'Front' : 'Back'} Camera
-            </button>
-          </div>
-
-          <div className="mb-6 rounded-lg overflow-hidden border-2 border-blue-100 bg-gray-900 relative">
-            <div id="qr-reader" className="w-full min-h-[320px]"></div>
-            {isSwitchingCamera && (
-              <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center text-white font-semibold">
-                Switching camera...
+            {eventId && (
+              <div className="mb-4">
+                <Link
+                  href={`/admin/events/${eventId}/dashboard`}
+                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 mr-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                    />
+                  </svg>
+                  Return to Dashboard
+                </Link>
               </div>
             )}
-          </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-center mb-2 text-blue-600">
+              Check In
+            </h1>
+            <p className="text-center text-gray-600 mb-6 md:mb-8 text-base md:text-lg">Scan QR code to check in</p>
 
-          <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-            <p className="text-sm font-medium text-gray-700">Current Station Location</p>
-            <p className="text-lg font-semibold text-gray-900 mt-1">
-              {stationLocation || 'Not set'}
-            </p>
-            {stationLocationError ? (
-              <p className="text-xs text-red-600 mt-2">{stationLocationError}</p>
-            ) : (
-              <p className="text-xs text-gray-500 mt-2">
-                Need to change it? Log out and log back in with the correct location.
-              </p>
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-2 border-red-300 text-red-800 rounded-lg">
+                <p className="font-semibold mb-2 text-lg">Camera Error</p>
+                <p className="text-sm mb-3">{error}</p>
+                <button
+                  onClick={handleStartScan}
+                  className="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700 transition-colors font-semibold"
+                >
+                  Try Again
+                </button>
+              </div>
             )}
-          </div>
 
-          <form onSubmit={handleManualSubmit} className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-            <label htmlFor="manual-id" className="block text-sm font-medium text-gray-700">
-              Participant ID Number
-            </label>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                id="manual-id"
-                type="text"
-                value={manualId}
-                onChange={(e) => setManualId(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., EMP-1001"
-              />
+            {isProcessing && !showPhotoCapture && !showVerification && (
+              <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-300 text-blue-800 rounded-lg text-center">
+                <p className="font-semibold text-lg">Processing check-in...</p>
+              </div>
+            )}
+
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="flex-1">
+                <label htmlFor="scanner-camera-select" className="block text-sm font-semibold text-gray-700 mb-1">
+                  Camera Source
+                </label>
+                <select
+                  id="scanner-camera-select"
+                  value={selectedCameraId ?? ''}
+                  onChange={(e) => handleCameraSelection(e.target.value)}
+                  disabled={isCameraLoading || isSwitchingCamera || availableCameras.length === 0}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                >
+                  {isCameraLoading && <option value="">Detecting cameras...</option>}
+                  {!isCameraLoading && availableCameras.length === 0 && <option value="">No cameras detected</option>}
+                  {!isCameraLoading && availableCameras.length > 0 && !selectedCameraId && (
+                    <option value="">Select a camera</option>
+                  )}
+                  {availableCameras.map((device) => (
+                    <option key={device.id} value={device.id}>
+                      {device.label || `Camera ${device.id.slice(0, 4)}`}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {isCameraLoading
+                    ? 'Looking for available cameras...'
+                    : selectedCameraId
+                      ? `Using ${availableCameras.find((device) => device.id === selectedCameraId)?.label || 'selected camera'
+                      }`
+                      : 'Select a camera to begin scanning'}
+                </p>
+              </div>
               <button
-                type="submit"
-                disabled={isProcessing}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={handleSwitchCamera}
+                disabled={isCameraLoading || isSwitchingCamera || availableCameras.length <= 1}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-500 transition disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
-                Use ID Number
+                Switch to {cameraPreference === 'back' ? 'Front' : 'Back'} Camera
               </button>
             </div>
-            {manualError && <p className="text-sm text-red-600">{manualError}</p>}
-            <p className="text-xs text-gray-500">
-            check in Participants with either their QR code or ID number.
-            </p>
-          </form>
 
-          {!isScanning && !error && !isProcessing && !showPhotoCapture && !showVerification && (
-            <div className="mb-4 text-center">
-              <button
-                onClick={handleStartScan}
-                className="bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg shadow-lg"
-              >
-                Start Scanning
-              </button>
+            <div className="mb-6 rounded-lg overflow-hidden border-2 border-blue-100 bg-gray-900 relative">
+              <div id="qr-reader" className="w-full min-h-[320px]"></div>
+              {isSwitchingCamera && (
+                <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center text-white font-semibold">
+                  Switching camera...
+                </div>
+              )}
             </div>
-          )}
 
-          <AnimatePresence>
-            {result && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className={`p-6 rounded-lg ${
-                  result.success
+            <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-gray-700">Current Station Location</p>
+              <p className="text-lg font-semibold text-gray-900 mt-1">
+                {stationLocation || 'Not set'}
+              </p>
+              {stationLocationError ? (
+                <p className="text-xs text-red-600 mt-2">{stationLocationError}</p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-2">
+                  Need to change it? Log out and log back in with the correct location.
+                </p>
+              )}
+            </div>
+
+            <form onSubmit={handleManualSubmit} className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+              <label htmlFor="manual-id" className="block text-sm font-medium text-gray-700">
+                Participant ID Number
+              </label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  id="manual-id"
+                  type="text"
+                  value={manualId}
+                  onChange={(e) => setManualId(e.target.value)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., EMP-1001"
+                />
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Use ID Number
+                </button>
+              </div>
+              {manualError && <p className="text-sm text-red-600">{manualError}</p>}
+              <p className="text-xs text-gray-500">
+                check in Participants with either their QR code or ID number.
+              </p>
+            </form>
+
+            {!isScanning && !error && !isProcessing && !showPhotoCapture && !showVerification && (
+              <div className="mb-4 text-center">
+                <button
+                  onClick={handleStartScan}
+                  className="w-full sm:w-auto bg-blue-600 text-white py-3 px-8 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg shadow-lg"
+                >
+                  Start Scanning
+                </button>
+              </div>
+            )}
+
+            <AnimatePresence>
+              {result && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className={`p-6 rounded-lg ${result.success
                     ? 'bg-green-50 border-2 border-green-300 text-green-800'
                     : 'bg-red-50 border-2 border-red-300 text-red-800'
-                }`}
-              >
-                {result.success ? (
-                  <div className="text-center">
-                    <p className="font-semibold text-2xl mb-2">
-                      ✓ Checked In Successfully
-                    </p>
-                    {result.participant && (
-                      <p className="text-lg mt-2 font-medium">
-                        {typeof result.participant === 'string' 
-                          ? result.participant 
-                          : result.participant.name}
+                    }`}
+                >
+                  {result.success ? (
+                    <div className="text-center">
+                      <p className="font-semibold text-2xl mb-2">
+                        ✓ Checked In Successfully
                       </p>
-                    )}
-                    <p className="text-sm mt-2">{result.message}</p>
-                  </div>
-                ) : (
-                  <div className="text-center">
-                    <p className="font-semibold text-xl">Error</p>
-                    <p className="text-sm mt-2">{result.error}</p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+                      {result.participant && (
+                        <p className="text-lg mt-2 font-medium">
+                          {typeof result.participant === 'string'
+                            ? result.participant
+                            : result.participant.name}
+                        </p>
+                      )}
+                      <p className="text-sm mt-2">{result.message}</p>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <p className="font-semibold text-xl">Error</p>
+                      <p className="text-sm mt-2">{result.error}</p>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {isScanning && (
-            <div className="mt-6 text-center">
-              <p className="text-base text-gray-600 font-medium">
-                Position the QR code within the frame
-              </p>
-              <p className="text-sm text-gray-500 mt-2">
-                Make sure camera permissions are granted
-              </p>
-            </div>
-          )}
-        </motion.div>
+            {isScanning && (
+              <div className="mt-6 text-center">
+                <p className="text-base text-gray-600 font-medium">
+                  Position the QR code within the frame
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Make sure camera permissions are granted
+                </p>
+              </div>
+            )}
+          </motion.div>
         </div>
       </div>
 

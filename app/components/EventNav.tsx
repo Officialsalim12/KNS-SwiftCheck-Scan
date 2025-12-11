@@ -36,27 +36,27 @@ export default function EventNav({ eventId, canEdit = false }: EventNavProps) {
     },
     ...(canEdit
       ? [
-          {
-            href: settingsPath,
-            label: 'Settings',
-            icon: (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-2 h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M11 11V7a1 1 0 112 0v4a1 1 0 01-1 1H7a1 1 0 110-2h4zm-7 0a9 9 0 1018 0 9 9 0 00-18 0z"
-                />
-              </svg>
-            ),
-          },
-        ]
+        {
+          href: settingsPath,
+          label: 'Settings',
+          icon: (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-2 h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 11V7a1 1 0 112 0v4a1 1 0 01-1 1H7a1 1 0 110-2h4zm-7 0a9 9 0 1018 0 9 9 0 00-18 0z"
+              />
+            </svg>
+          ),
+        },
+      ]
       : []),
   ] as const;
 
@@ -72,11 +72,10 @@ export default function EventNav({ eventId, canEdit = false }: EventNavProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center px-6 py-3 text-sm font-semibold rounded-lg transition-all duration-200 ${
-                  isActive
+                className={`inline-flex items-center px-4 py-3 md:px-6 text-sm font-semibold rounded-lg transition-all duration-200 ${isActive
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                }`}
+                  }`}
               >
                 {item.icon}
                 {item.label}

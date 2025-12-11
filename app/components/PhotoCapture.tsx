@@ -27,7 +27,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
       return;
     }
 
-    // Start camera
+    // Initialize camera on mount
     const initializeCamera = async () => {
       await startCamera();
     };
@@ -35,7 +35,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
     initializeCamera();
 
     return () => {
-      // Cleanup stream on unmount
+      // Cleanup: Stop all active streams when component unmounts
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
@@ -73,6 +73,9 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
     }
   };
 
+  /**
+   * Stops the currently active media stream and clears the reference.
+   */
   const stopActiveStream = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -81,6 +84,10 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
     setStream(null);
   };
 
+  /**
+   * Initializes the camera stream with specific constraints or defaults.
+   * Handles device selection and resolution constraints.
+   */
   const startCamera = async (options?: { deviceId?: string; facingMode?: 'user' | 'environment' }) => {
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       setError('Camera access is not supported on this device.');
@@ -95,15 +102,15 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
     const videoConstraints: MediaTrackConstraints =
       options?.deviceId
         ? {
-            deviceId: { exact: options.deviceId },
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          }
+          deviceId: { exact: options.deviceId },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        }
         : {
-            facingMode: options?.facingMode ?? preferredFacingMode,
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          };
+          facingMode: options?.facingMode ?? preferredFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        };
 
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -117,6 +124,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
         videoRef.current.srcObject = mediaStream;
       }
 
+      // Update internal state based on the actual active track settings
       const videoTrack = mediaStream.getVideoTracks()[0];
       const settings = videoTrack?.getSettings();
       if (settings?.facingMode && settings.facingMode !== preferredFacingMode) {
@@ -132,7 +140,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
       console.error('Error accessing camera:', err);
       setError(
         err?.message ||
-          'Unable to access camera. Please make sure permissions are granted and no other app is using the camera.',
+        'Unable to access camera. Please make sure permissions are granted and no other app is using the camera.',
       );
     } finally {
       setIsSwitchingCamera(false);
@@ -166,7 +174,7 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
 
       // Convert to data URL
       const photoDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      
+
       // Stop camera
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
@@ -248,17 +256,17 @@ export default function PhotoCapture({ onCapture, onCancel, participantName }: P
           )}
         </div>
 
-        <div className="flex gap-4 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-4 justify-end">
           <button
             onClick={onCancel}
-            className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+            className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-semibold text-center"
           >
             Cancel
           </button>
           <button
             onClick={capturePhoto}
             disabled={isCapturing || !!error}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed text-center"
           >
             {isCapturing ? 'Capturing...' : 'Capture Photo'}
           </button>

@@ -56,10 +56,10 @@ export default async function AdminDashboard() {
               </svg>
             </div>
           </div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+          <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4">
             System Dashboard
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-2">
             Manage and organize your events with ease. Create, monitor, and track all your activities in one place.
           </p>
         </div>
@@ -67,7 +67,7 @@ export default async function AdminDashboard() {
         {/* Create Event Section */}
         <div className="mb-12">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 md:px-8 md:py-6">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 backdrop-blur-sm p-2 rounded-lg">
                   <svg
@@ -85,10 +85,10 @@ export default async function AdminDashboard() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold text-white">Create New Event</h2>
+                <h2 className="text-xl md:text-2xl font-bold text-white">Create New Event</h2>
               </div>
             </div>
-            <div className="p-8">
+            <div className="p-4 md:p-8">
               <EventForm />
             </div>
           </div>

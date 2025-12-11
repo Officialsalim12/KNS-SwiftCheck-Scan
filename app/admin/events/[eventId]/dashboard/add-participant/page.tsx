@@ -84,7 +84,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
     try {
       const eventType = event?.event_type?.toLowerCase();
       const showTableNumber = eventType === 'party' || eventType === 'marriage';
-      
+
       let fileContent: string;
       if (fileExtension === 'csv') {
         fileContent = await csvFile.text();
@@ -98,7 +98,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
         }
         fileContent = btoa(binary);
       }
-      
+
       const result = await bulkCreateParticipantsFromFile(
         fileContent,
         csvFile.name,
@@ -118,7 +118,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
           errors: result.errors || [],
         });
         setIsLoading(false);
-        
+
         if ((result.created || 0) > 0 || (result.updated || 0) > 0) {
           setTimeout(() => {
             router.push(`/admin/events/${params.eventId}/dashboard/participants`);
@@ -142,14 +142,14 @@ export default function AddParticipant({ params }: { params: { eventId: string }
         className="max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-          <h1 className="text-3xl font-bold text-white mb-2">Add Participants</h1>
-          <p className="text-blue-100">Add a single participant or upload multiple via CSV/XLSX</p>
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 md:px-8 md:py-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Add Participants</h1>
+          <p className="text-blue-100 text-sm md:text-base">Add a single participant or upload multiple via CSV/XLSX</p>
         </div>
 
         {/* Tabs */}
         <div className="border-b border-gray-200 bg-gray-50">
-          <div className="flex">
+          <div className="flex flex-col sm:flex-row">
             <button
               type="button"
               onClick={() => {
@@ -157,11 +157,10 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                 setError(null);
                 setCsvResult(null);
               }}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-all ${
-                activeTab === 'single'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-sm font-medium transition-all ${activeTab === 'single'
+                  ? 'text-blue-600 border-b-2 sm:border-b-2 border-blue-600 bg-white'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               Single Participant
             </button>
@@ -172,110 +171,109 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                 setError(null);
                 setSuccess(false);
               }}
-              className={`flex-1 px-6 py-4 text-sm font-medium transition-all ${
-                activeTab === 'csv'
-                  ? 'text-blue-600 border-b-2 border-blue-600 bg-white'
+              className={`flex-1 px-4 py-3 md:px-6 md:py-4 text-sm font-medium transition-all ${activeTab === 'csv'
+                  ? 'text-blue-600 border-b-2 sm:border-b-2 border-blue-600 bg-white'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-              }`}
+                }`}
             >
               File Upload (CSV/XLSX)
             </button>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-5 md:p-8">
           {/* Single Participant Form */}
           {activeTab === 'single' && (
             <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter participant name"
-            />
-          </div>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter participant name"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="id_number" className="block text-sm font-medium text-gray-700 mb-2">
-              Participant ID Number <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="id_number"
-              name="id_number"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter a unique ID number (e.g., EMP-1001)"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              This number will be tied to their QR code and can be used for manual check-in/out.
-            </p>
-          </div>
+              <div>
+                <label htmlFor="id_number" className="block text-sm font-medium text-gray-700 mb-2">
+                  Participant ID Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="id_number"
+                  name="id_number"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter a unique ID number (e.g., EMP-1001)"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  This number will be tied to their QR code and can be used for manual check-in/out.
+                </p>
+              </div>
 
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              required
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter email address"
-            />
-          </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  required
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter email address"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-              Phone
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter phone number"
-            />
-          </div>
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter phone number"
+                />
+              </div>
 
-          <div>
-            <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-2">
-              Organization
-            </label>
-            <input
-              type="text"
-              id="organization"
-              name="organization"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter organization name"
-            />
-          </div>
+              <div>
+                <label htmlFor="organization" className="block text-sm font-medium text-gray-700 mb-2">
+                  Organization
+                </label>
+                <input
+                  type="text"
+                  id="organization"
+                  name="organization"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter organization name"
+                />
+              </div>
 
-          {showTableNumber && (
-            <div>
-              <label htmlFor="table_number" className="block text-sm font-medium text-gray-700 mb-2">
-                Table Number
-              </label>
-              <input
-                type="number"
-                id="table_number"
-                name="table_number"
-                min="1"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter table number (optional)"
-              />
-              <p className="text-xs text-gray-500 mt-2">
-                Optionally specify which table this participant will be seated at.
-              </p>
-            </div>
-          )}
+              {showTableNumber && (
+                <div>
+                  <label htmlFor="table_number" className="block text-sm font-medium text-gray-700 mb-2">
+                    Table Number
+                  </label>
+                  <input
+                    type="number"
+                    id="table_number"
+                    name="table_number"
+                    min="1"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter table number (optional)"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">
+                    Optionally specify which table this participant will be seated at.
+                  </p>
+                </div>
+              )}
 
               {error && (
                 <div className="bg-red-50 border-l-4 border-red-400 text-red-700 px-4 py-3 rounded-lg">
@@ -291,7 +289,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                 </div>
               )}
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row gap-4 pt-4">
                 <button
                   type="submit"
                   disabled={isLoading}
@@ -302,7 +300,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-center"
                 >
                   Cancel
                 </button>
@@ -387,11 +385,10 @@ export default function AddParticipant({ params }: { params: { eventId: string }
 
               {csvResult && (
                 <div className="space-y-3">
-                  <div className={`border-l-4 px-4 py-3 rounded-lg ${
-                    csvResult.created > 0
+                  <div className={`border-l-4 px-4 py-3 rounded-lg ${csvResult.created > 0
                       ? 'bg-green-50 border-green-400 text-green-700'
                       : 'bg-yellow-50 border-yellow-400 text-yellow-700'
-                  }`}>
+                    }`}>
                     <p className="font-medium">
                       Processed {csvResult.total} participants
                     </p>
@@ -399,7 +396,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                       ✓ Created: {csvResult.created} {csvResult.updated > 0 && `| ↻ Updated: ${csvResult.updated}`} | ✗ Failed: {csvResult.failed}
                     </p>
                   </div>
-                  
+
                   {csvResult.errors.length > 0 && (
                     <div className="bg-red-50 border-l-4 border-red-400 px-4 py-3 rounded-lg max-h-60 overflow-y-auto">
                       <p className="font-medium text-red-700 mb-2">Errors:</p>
@@ -419,7 +416,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                 </div>
               )}
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex flex-col-reverse sm:flex-row gap-4 pt-4">
                 <button
                   type="submit"
                   disabled={isLoading || !csvFile}
@@ -430,7 +427,7 @@ export default function AddParticipant({ params }: { params: { eventId: string }
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                  className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-center"
                 >
                   Cancel
                 </button>

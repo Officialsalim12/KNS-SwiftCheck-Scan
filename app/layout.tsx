@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   description: "QR Code based attendance system for KNS Training",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

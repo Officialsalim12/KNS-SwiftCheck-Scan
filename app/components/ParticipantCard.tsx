@@ -40,7 +40,7 @@ export default function ParticipantCard({ participant }: ParticipantCardProps) {
       // Fetch the image
       const response = await fetch(participant.qr_code_url);
       const blob = await response.blob();
-      
+
       // Create a download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -48,7 +48,7 @@ export default function ParticipantCard({ participant }: ParticipantCardProps) {
       link.download = `${participant.name.replace(/\s+/g, '_')}_QR_Code.png`;
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
@@ -71,19 +71,19 @@ export default function ParticipantCard({ participant }: ParticipantCardProps) {
                 className="w-20 h-20 object-cover rounded-full border-4 border-white shadow-xl"
               />
             </div>
-            <h3 className="text-xl font-bold text-white text-center tracking-wider uppercase">
+            <h3 className="text-lg md:text-xl font-bold text-white text-center tracking-wider uppercase">
               {participant.name}
             </h3>
           </div>
         ) : (
-          <h3 className="text-xl font-bold text-white text-center tracking-wider uppercase">
+          <h3 className="text-lg md:text-xl font-bold text-white text-center tracking-wider uppercase">
             {participant.name}
           </h3>
         )}
       </div>
 
       {/* Card Body - Flexible to fill remaining space */}
-      <div className="p-6 flex flex-col flex-grow">
+      <div className="p-4 md:p-6 flex flex-col flex-grow">
         {participant.qr_code_url && (
           <div className="flex flex-col items-center mb-6 pb-6 border-b border-gray-200">
             <div className="bg-white p-3 rounded-lg shadow-md mb-4">
@@ -120,36 +120,36 @@ export default function ParticipantCard({ participant }: ParticipantCardProps) {
 
         {/* Participant Details - Consistent spacing */}
         <div className="space-y-3 flex-grow">
-          <div className="flex items-start min-h-[24px] gap-1">
-            <span className="font-bold text-gray-700 flex-shrink-0">Email:</span>
-            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">{participant.email}</span>
+          <div className="flex items-start min-h-[20px] md:min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0 text-xs md:text-sm">Email:</span>
+            <span className="text-gray-600 text-xs md:text-sm flex-1 break-words min-w-0">{participant.email}</span>
           </div>
 
-          <div className="flex items-start min-h-[24px] gap-1">
-            <span className="font-bold text-gray-700 flex-shrink-0">ID Number:</span>
-            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">
+          <div className="flex items-start min-h-[20px] md:min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0 text-xs md:text-sm">ID Number:</span>
+            <span className="text-gray-600 text-xs md:text-sm flex-1 break-words min-w-0">
               {participant.id_number || <span className="text-gray-400 italic">N/A</span>}
             </span>
           </div>
 
-          <div className="flex items-start min-h-[24px] gap-1">
-            <span className="font-bold text-gray-700 flex-shrink-0">Phone:</span>
-            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">
+          <div className="flex items-start min-h-[20px] md:min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0 text-xs md:text-sm">Phone:</span>
+            <span className="text-gray-600 text-xs md:text-sm flex-1 break-words min-w-0">
               {participant.phone || <span className="text-gray-400 italic">N/A</span>}
             </span>
           </div>
 
-          <div className="flex items-start min-h-[24px] gap-1">
-            <span className="font-bold text-gray-700 flex-shrink-0">Organization:</span>
-            <span className="text-gray-600 text-sm flex-1 break-words min-w-0">
+          <div className="flex items-start min-h-[20px] md:min-h-[24px] gap-1">
+            <span className="font-bold text-gray-700 flex-shrink-0 text-xs md:text-sm">Organization:</span>
+            <span className="text-gray-600 text-xs md:text-sm flex-1 break-words min-w-0">
               {participant.organization || <span className="text-gray-400 italic">N/A</span>}
             </span>
           </div>
 
           {participant.table_number && (
-            <div className="flex items-start min-h-[24px] gap-1">
-              <span className="font-bold text-gray-700 flex-shrink-0">Table Number:</span>
-              <span className="text-gray-600 text-sm flex-1 break-words min-w-0">{participant.table_number}</span>
+            <div className="flex items-start min-h-[20px] md:min-h-[24px] gap-1">
+              <span className="font-bold text-gray-700 flex-shrink-0 text-xs md:text-sm">Table Number:</span>
+              <span className="text-gray-600 text-xs md:text-sm flex-1 break-words min-w-0">{participant.table_number}</span>
             </div>
           )}
         </div>
