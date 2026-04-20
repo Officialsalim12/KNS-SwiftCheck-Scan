@@ -213,7 +213,7 @@ export default function RegisterPage() {
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                         <div>
-                          <label htmlFor="password" name="password" className="block text-sm font-semibold text-gray-900 mb-1.5">
+                          <label htmlFor="password" className="block text-sm font-semibold text-gray-900 mb-1.5">
                             Password
                           </label>
                           <div className="relative">
@@ -236,7 +236,7 @@ export default function RegisterPage() {
                           </div>
                         </div>
                         <div>
-                          <label htmlFor="confirm_password" name="confirm_password" className="block text-sm font-semibold text-gray-900 mb-1.5">
+                          <label htmlFor="confirm_password" className="block text-sm font-semibold text-gray-900 mb-1.5">
                             Confirm
                           </label>
                           <div className="relative">
