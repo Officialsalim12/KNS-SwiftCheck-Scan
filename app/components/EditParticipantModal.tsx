@@ -10,6 +10,9 @@ interface Participant {
   email: string;
   phone?: string;
   organization?: string;
+  qr_code_url?: string;
+  photo_url?: string;
+  created_at: string;
   id_number?: string;
   table_number?: number | null;
   event_id: string;
