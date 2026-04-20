@@ -28,7 +28,7 @@ export async function sendEmail({ to, subject, html }: EmailOptions): Promise<bo
         'Authorization': `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'KNS Training <noreply@kns.sl>',
+        from: process.env.EMAIL_FROM || 'KNS Training <onboarding@resend.dev>',
         to: [to],
         subject,
         html,

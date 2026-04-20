@@ -11,8 +11,7 @@ export async function createEvent(formData: FormData) {
   const startDate = formData.get('start_date') as string;
   const endDate = formData.get('end_date') as string;
   const organizationName = (formData.get('organization_name') as string)?.trim();
-  const selectedEventType = formData.get('event_type') as string;
-  const otherEventType = (formData.get('event_type_other') as string)?.trim();
+  const finalEventType = (formData.get('event_type') as string)?.trim();
   const location = (formData.get('location') as string)?.trim();
   const usernameFields = ['username', 'username_2', 'username_3', 'username_4', 'username_5'];
   const usernames = usernameFields
@@ -40,16 +39,8 @@ export async function createEvent(formData: FormData) {
     return { error: 'Event location is required' };
   }
 
-  if (!selectedEventType) {
+  if (!finalEventType) {
     return { error: 'Event type is required' };
-  }
-
-  let finalEventType = selectedEventType;
-  if (selectedEventType === 'Other') {
-    if (!otherEventType) {
-      return { error: 'Please specify the event type' };
-    }
-    finalEventType = otherEventType;
   }
 
   try {
@@ -175,7 +166,11 @@ export async function verifyEventCredentials(
       .single();
 
     if (error || !event) {
-      return { valid: false, event: null };
+      return { valid: false, event: null, error: 'Invalid credentials' };
+    }
+
+    if (event.is_suspended) {
+      return { valid: false, event: null, error: 'This event has been suspended by the administrator.' };
     }
 
     const allowedUsernames = [
@@ -202,8 +197,7 @@ export async function updateEvent(eventId: string, formData: FormData) {
   const startDate = formData.get('start_date') as string;
   const endDate = formData.get('end_date') as string;
   const organizationName = (formData.get('organization_name') as string)?.trim();
-  const selectedEventType = formData.get('event_type') as string;
-  const otherEventType = (formData.get('event_type_other') as string)?.trim();
+  const finalEventType = (formData.get('event_type') as string)?.trim();
   const location = (formData.get('location') as string)?.trim();
 
   const usernameFields = ['username', 'username_2', 'username_3', 'username_4', 'username_5'];
@@ -236,16 +230,8 @@ export async function updateEvent(eventId: string, formData: FormData) {
     return { error: 'Event location is required' };
   }
 
-  if (!selectedEventType) {
+  if (!finalEventType) {
     return { error: 'Event type is required' };
-  }
-
-  let finalEventType = selectedEventType;
-  if (selectedEventType === 'Other') {
-    if (!otherEventType) {
-      return { error: 'Please specify the event type' };
-    }
-    finalEventType = otherEventType;
   }
 
   try {
@@ -330,6 +316,69 @@ export async function updateEvent(eventId: string, formData: FormData) {
   } catch (error: any) {
     console.error('Error updating event:', error);
     return { error: error.message || 'Failed to update event' };
+  }
+}
+
+export async function resetEventPassword(eventId: string, newPassword: string) {
+  if (!eventId || !newPassword) {
+    return { error: 'Event ID and new password are required' };
+  }
+
+  try {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    const { error: updateError } = await supabaseAdmin
+      .from('events')
+      .update({ password_hash: passwordHash })
+      .eq('id', eventId);
+
+    if (updateError) throw updateError;
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error resetting event password:', error);
+    return { error: error.message || 'Failed to reset password' };
+  }
+}
+
+export async function deleteEvent(eventId: string) {
+  if (!eventId) {
+    return { error: 'Event ID is required' };
+  }
+
+  try {
+    const { error } = await supabaseAdmin
+      .from('events')
+      .delete()
+      .eq('id', eventId);
+
+    if (error) throw error;
+    
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error deleting event:', error);
+    return { error: error.message || 'Failed to delete event' };
+  }
+}
+
+export async function toggleEventSuspension(eventId: string, suspend: boolean) {
+  if (!eventId) {
+    return { error: 'Event ID is required' };
+  }
+
+  try {
+    const { error } = await supabaseAdmin
+      .from('events')
+      .update({ is_suspended: suspend })
+      .eq('id', eventId);
+
+    if (error) throw error;
+    
+    revalidatePath('/admin');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error toggling event suspension:', error);
+    return { error: error.message || 'Failed to update event status' };
   }
 }
 

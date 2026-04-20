@@ -56,7 +56,7 @@ export default async function EventSettingsPage({
 
         {/* Form Section */}
         <div className="bg-white rounded-2xl shadow-xl p-5 md:p-8 border border-gray-100">
-          <EditEventForm event={event} />
+          <EditEventForm event={event} successRedirect={`/admin/events/${params.eventId}/dashboard`} />
         </div>
       </div>
     </div>

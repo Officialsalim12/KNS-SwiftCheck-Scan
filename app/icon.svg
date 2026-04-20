@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#2563eb" />
+  
+  <!-- QR Code stylization -->
+  <rect x="120" y="120" width="100" height="100" rx="24" stroke="white" stroke-width="32" />
+  <rect x="144" y="144" width="52" height="52" rx="8" fill="white" />
+  
+  <rect x="292" y="120" width="100" height="100" rx="24" stroke="white" stroke-width="32" />
+  <rect x="316" y="144" width="52" height="52" rx="8" fill="white" />
+  
+  <rect x="120" y="292" width="100" height="100" rx="24" stroke="white" stroke-width="32" />
+  <rect x="144" y="316" width="52" height="52" rx="8" fill="white" />
+  
+  <!-- Checkmark -->
+  <path d="M280 340 L340 400 L450 280" stroke="#10b981" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

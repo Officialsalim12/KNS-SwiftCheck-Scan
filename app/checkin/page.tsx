@@ -9,6 +9,7 @@ import PhotoCapture from '@/app/components/PhotoCapture';
 import VerificationModal from '@/app/components/VerificationModal';
 import LogoHeader from '@/app/components/LogoHeader';
 import { pickCameraIdByPreference, detectCameraFacing, CameraFacing } from '@/lib/cameraHelpers';
+import { updateEventLocation } from '@/app/actions/event-auth';
 
 export default function CheckInPage() {
   const [result, setResult] = useState<{
@@ -52,6 +53,7 @@ export default function CheckInPage() {
 
   const [isSwitchingCamera, setIsSwitchingCamera] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
+  const [isOrg, setIsOrg] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,6 +67,7 @@ export default function CheckInPage() {
         if (isMounted) {
           setStationLocation(data?.session?.location ?? null);
           setEventId(data?.session?.eventId ?? null);
+          setIsOrg(!!data?.isOrg);
           setStationLocationError(null);
         }
       } catch {
@@ -374,6 +377,29 @@ export default function CheckInPage() {
     }, 3000);
   };
 
+  const handleSetLocation = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newLocation = formData.get('newLocation') as string;
+
+    if (!newLocation.trim()) return;
+
+    setIsProcessing(true);
+    try {
+      const result = await updateEventLocation(newLocation.trim());
+      if (result.success) {
+        setStationLocation(newLocation.trim());
+        setStationLocationError(null);
+      } else {
+        setStationLocationError(result.error || 'Failed to update location');
+      }
+    } catch (err) {
+      setStationLocationError('An unexpected error occurred');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-8">
@@ -387,7 +413,7 @@ export default function CheckInPage() {
             {eventId && (
               <div className="mb-4">
                 <Link
-                  href={`/admin/events/${eventId}/dashboard`}
+                  href={isOrg ? `/org/dashboard/analytics/${eventId}` : `/admin/events/${eventId}/dashboard`}
                   className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
                 >
                   <svg
@@ -484,16 +510,49 @@ export default function CheckInPage() {
             </div>
 
             <div className="mb-6 bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-gray-700">Current Station Location</p>
-              <p className="text-lg font-semibold text-gray-900 mt-1">
-                {stationLocation || 'Not set'}
-              </p>
-              {stationLocationError ? (
-                <p className="text-xs text-red-600 mt-2">{stationLocationError}</p>
+              <p className="text-sm font-medium text-gray-700 font-bold">Current Station Location</p>
+              
+              {!stationLocation ? (
+                <div className="mt-2">
+                  <p className="text-red-600 text-sm mb-3">Location Not Set</p>
+                  <form onSubmit={handleSetLocation} className="space-y-2">
+                    <input
+                      type="text"
+                      name="newLocation"
+                      placeholder="e.g., Entrance Gate"
+                      required
+                      className="w-full px-3 py-2 text-sm border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    />
+                    <button
+                      type="submit"
+                      disabled={isProcessing}
+                      className="w-full py-2 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                    >
+                      {isProcessing ? 'Setting...' : 'Set Station Location'}
+                    </button>
+                  </form>
+                </div>
               ) : (
-                <p className="text-xs text-gray-500 mt-2">
-                  Need to change it? Log out and log back in with the correct location.
-                </p>
+                <>
+                  <p className="text-lg font-bold text-blue-700 mt-1">
+                    {stationLocation}
+                  </p>
+                  {stationLocationError ? (
+                    <p className="text-xs text-red-600 mt-2">{stationLocationError}</p>
+                  ) : (
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-gray-500 italic">
+                        Stamping all records with this location.
+                      </p>
+                      <button 
+                        onClick={() => setStationLocation(null)}
+                        className="text-[10px] text-blue-600 hover:underline font-medium"
+                      >
+                        Change Location
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 

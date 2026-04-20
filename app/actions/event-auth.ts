@@ -3,6 +3,9 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
+import { getEventById, verifyEventCredentials } from './events';
+import { checkAdminAuth } from '@/lib/auth';
+
 const EVENT_SESSION_COOKIE = 'event_session';
 
 export type EventSession = {
@@ -61,9 +64,23 @@ export async function clearEventSession() {
   cookieStore.delete(EVENT_SESSION_COOKIE);
 }
 
+export async function updateEventLocation(location: string) {
+  const session = await getEventSession();
+  if (!session) {
+    return { error: 'No active session found' };
+  }
+
+  await setEventSession(session.eventId, session.username, location);
+  return { success: true };
+}
+
 export async function checkEventAuth(eventId: string): Promise<boolean> {
   const session = await getEventSession();
-  return session?.eventId === eventId;
+  if (session?.eventId === eventId) return true;
+  
+  // Global Admin pass-through override
+  const isAdmin = await checkAdminAuth();
+  return isAdmin;
 }
 
 export async function requireEventAuth(eventId: string) {
@@ -73,9 +90,57 @@ export async function requireEventAuth(eventId: string) {
   }
 }
 
+export async function requireOrgEventAuth(eventId: string) {
+  const isAuthenticated = await checkEventAuth(eventId);
+  if (!isAuthenticated) {
+    redirect(`/org/dashboard/analytics/${eventId}/login`);
+  }
+}
+
+export async function authenticateEventForAnalytics(formData: FormData) {
+  const eventId = formData.get('eventId') as string;
+  const username = formData.get('username') as string;
+  const passkey = formData.get('passkey') as string;
+  const location = formData.get('location') as string;
+
+  if (!eventId || !username || !passkey) {
+    return { error: 'Username and passkey are required' };
+  }
+
+  if (!location?.trim()) {
+    return { error: 'Current location is required' };
+  }
+
+  const result = await verifyEventCredentials(username, passkey, eventId);
+
+  if (!result.valid) {
+    // Check if it's the username that's wrong or the password
+    const { data: event } = await getEventById(eventId);
+    if (event) {
+      const allowedUsernames = [
+        event.username,
+        ...(event.event_users?.map((user: { username: string }) => user.username) ?? []),
+      ].filter(Boolean);
+
+      if (!allowedUsernames.includes(username.trim())) {
+        return { error: 'Invalid user' };
+      }
+    }
+    return { error: 'Invalid passkey' };
+  }
+
+  await setEventSession(eventId, username.trim(), location.trim());
+  return { success: true };
+}
+
 export async function logout(formData: FormData) {
   await clearEventSession();
   const eventId = formData.get('eventId') as string;
+  const source = formData.get('source') as string;
+  
+  if (source === 'org') {
+    redirect(`/org/dashboard/analytics/${eventId}/login`);
+  }
   redirect(`/admin/events/${eventId}/login`);
 }
 

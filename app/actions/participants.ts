@@ -4,6 +4,49 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import { generateQRCode } from '@/lib/qrcode';
 import { revalidatePath } from 'next/cache';
 import Papa from 'papaparse';
+import { getOrgSession } from '@/lib/org-auth';
+
+function getOrgPrefix(orgName: string): string {
+  const clean = orgName.trim().replace(/[^a-zA-Z]/g, '');
+  return clean.substring(0, 3).toUpperCase();
+}
+
+export async function getNextParticipantId(eventId: string) {
+  try {
+    const session = await getOrgSession();
+    if (!session) return { error: 'Not authenticated' };
+
+    const prefix = getOrgPrefix(session.name) + '00';
+    
+    // Fetch all IDs starting with this prefix
+    const { data: participants, error } = await supabaseAdmin
+      .from('participants')
+      .select('id_number')
+      .like('id_number', `${prefix}%`);
+
+    if (error) throw error;
+
+    let maxNum = 0;
+    if (participants && participants.length > 0) {
+      participants.forEach(p => {
+        const numPart = p.id_number.substring(prefix.length);
+        const num = parseInt(numPart, 10);
+        if (!isNaN(num) && num > maxNum) {
+          maxNum = num;
+        }
+      });
+    }
+
+    return { 
+      success: true, 
+      nextId: `${prefix}${maxNum + 1}`,
+      prefix 
+    };
+  } catch (error: any) {
+    console.error('Error generating next ID:', error);
+    return { error: 'Failed to generate ID' };
+  }
+}
 
 export async function createParticipant(formData: FormData) {
   const name = formData.get('name') as string;
@@ -79,6 +122,55 @@ export async function createParticipant(formData: FormData) {
   } catch (error: any) {
     console.error('Error creating participant:', error);
     return { error: error.message || 'Failed to create participant' };
+  }
+}
+
+export async function updateParticipant(formData: FormData) {
+  const idValue = formData.get('id') as string;
+  const name = formData.get('name') as string;
+  const email = formData.get('email') as string;
+  const phone = formData.get('phone') as string;
+  const organization = formData.get('organization') as string;
+  const tableNumber = formData.get('table_number') as string;
+  const eventId = formData.get('event_id') as string;
+
+  if (!idValue) {
+    return { error: 'Participant ID is required for updating' };
+  }
+
+  if (!name || !email) {
+    return { error: 'Name and email are required' };
+  }
+
+  try {
+    const updateData: any = {
+      name,
+      email,
+      phone: phone || null,
+      organization: organization || null,
+      table_number: tableNumber ? parseInt(tableNumber, 10) : null,
+    };
+
+    const { data: participant, error } = await supabaseAdmin
+      .from('participants')
+      .update(updateData)
+      .eq('id', idValue)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    if (eventId) {
+      revalidatePath(`/admin/events/${eventId}/dashboard/participants`);
+      revalidatePath(`/org/dashboard/analytics/${eventId}/participants`);
+    }
+
+    return { success: true, participant };
+  } catch (error: any) {
+    console.error('Error updating participant:', error);
+    return { error: error.message || 'Failed to update participant' };
   }
 }
 
@@ -299,6 +391,24 @@ export async function bulkCreateParticipantsFromFile(
       console.log('All keys in first row:', Object.keys(rows[0]));
     }
 
+    const session = await getOrgSession();
+    const orgPrefix = session ? getOrgPrefix(session.name) + '00' : null;
+    let nextSeqNum = 0;
+
+    if (orgPrefix) {
+      const { data: existing } = await supabaseAdmin
+        .from('participants')
+        .select('id_number')
+        .like('id_number', `${orgPrefix}%`);
+      
+      if (existing) {
+        existing.forEach(p => {
+          const num = parseInt(p.id_number.substring(orgPrefix.length), 10);
+          if (!isNaN(num) && num > nextSeqNum) nextSeqNum = num;
+        });
+      }
+    }
+
     const results = {
       success: 0,
       updated: 0,
@@ -362,7 +472,13 @@ export async function bulkCreateParticipantsFromFile(
       const hasEmail = email && email.length > 0;
       const hasIdNumber = idNumber && idNumber.length > 0;
 
-      if (!hasName || !hasEmail || !hasIdNumber) {
+      // Auto-generate ID if missing
+      if (!hasIdNumber && orgPrefix) {
+        nextSeqNum++;
+        idNumber = `${orgPrefix}${nextSeqNum}`;
+      }
+
+      if (!hasName || !hasEmail || (!hasIdNumber && !orgPrefix)) {
         results.failed++;
         const missingFields = [];
         if (!hasName) missingFields.push('name');

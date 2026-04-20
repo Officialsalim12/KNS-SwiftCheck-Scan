@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KNS Training Pass System",
+  title: "KNS SwiftCheck Scan",
   description: "QR Code based attendance system for KNS Training",
 };
 
@@ -12,6 +12,8 @@ export const viewport = {
   maximumScale: 1,
 };
 
+import { ToastProvider } from "@/lib/ToastContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -19,7 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+      </body>
     </html>
   );
 }

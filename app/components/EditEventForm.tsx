@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { updateEvent } from '@/app/actions/events';
+import { Eye, EyeOff } from 'lucide-react';
 
 type EventUser = {
   id: string;
@@ -22,9 +23,10 @@ interface EditEventFormProps {
     organizations?: { name?: string | null } | null;
     event_users?: EventUser[] | null;
   };
+  successRedirect?: string;
 }
 
-const EVENT_TYPES = ['Seminar', 'Workshop', 'Marriage', 'Party', 'Other'];
+const EVENT_TYPES = ['Seminar', 'Workshop', 'Marriage', 'Party', 'Conference', 'Meeting', 'Religious', 'Social'];
 
 function formatDateInput(value?: string | null) {
   if (!value) return '';
@@ -36,24 +38,13 @@ function formatDateInput(value?: string | null) {
   return `${year}-${month}-${day}`;
 }
 
-export default function EditEventForm({ event }: EditEventFormProps) {
+export default function EditEventForm({ event, successRedirect }: EditEventFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
-  const hasCustomType =
-    event.event_type && !EVENT_TYPES.includes(event.event_type) ? true : false;
-  const initialType = hasCustomType
-    ? 'Other'
-    : event.event_type
-    ? (event.event_type as string)
-    : 'Seminar';
-
-  const [eventType, setEventType] = useState(initialType);
-  const [otherEventType, setOtherEventType] = useState(
-    hasCustomType ? event.event_type ?? '' : '',
-  );
 
   const usernameDefaults = useMemo(() => {
     const existing = Array.from(
@@ -78,11 +69,6 @@ export default function EditEventForm({ event }: EditEventFormProps) {
 
     const formData = new FormData(e.currentTarget);
 
-    if (eventType !== 'Other') {
-      formData.set('event_type_other', '');
-    } else {
-      formData.set('event_type_other', otherEventType);
-    }
 
     const result = await updateEvent(event.id, formData);
 
@@ -94,7 +80,14 @@ export default function EditEventForm({ event }: EditEventFormProps) {
 
     setSuccess('Event updated successfully');
     setIsLoading(false);
-    router.refresh();
+    
+    if (successRedirect) {
+      setTimeout(() => {
+        router.push(successRedirect);
+      }, 1500);
+    } else {
+      router.refresh();
+    }
   }
 
   return (
@@ -123,8 +116,9 @@ export default function EditEventForm({ event }: EditEventFormProps) {
             id="organization_name"
             name="organization_name"
             defaultValue={event.organizations?.name ?? ''}
+            readOnly
             required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-100 cursor-not-allowed"
           />
         </div>
       </div>
@@ -187,51 +181,45 @@ export default function EditEventForm({ event }: EditEventFormProps) {
         <label htmlFor="event_type" className="block text-sm font-medium text-gray-700 mb-2">
           Event Type
         </label>
-        <select
+        <input
+          type="text"
           id="event_type"
           name="event_type"
-          value={eventType}
-          onChange={(e) => setEventType(e.target.value)}
+          list="event_types"
+          defaultValue={event.event_type ?? ''}
+          required
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        >
+          placeholder="Select or type event type"
+        />
+        <datalist id="event_types">
           {EVENT_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {type === 'Other' ? 'Other (specify below)' : type}
-            </option>
+            <option key={type} value={type} />
           ))}
-        </select>
+        </datalist>
       </div>
-
-      {eventType === 'Other' && (
-        <div>
-          <label htmlFor="event_type_other" className="block text-sm font-medium text-gray-700 mb-2">
-            Specify Event Type
-          </label>
-          <input
-            type="text"
-            id="event_type_other"
-            name="event_type_other"
-            value={otherEventType}
-            onChange={(e) => setOtherEventType(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter custom event type"
-          />
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
             Password
           </label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="Leave blank to keep current password"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              id="password"
+              name="password"
+              placeholder="Leave blank to keep current password"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
         <div className="flex items-end">
           <p className="text-sm text-gray-500">

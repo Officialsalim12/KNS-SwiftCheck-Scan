@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import LoadingSpinner from './ui/LoadingSpinner';
 
 interface EventNavProps {
   eventId: string;
@@ -10,6 +12,13 @@ interface EventNavProps {
 
 export default function EventNav({ eventId, canEdit = false }: EventNavProps) {
   const pathname = usePathname();
+  const [transitioningTo, setTransitioningTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Reset transition state whenever the pathname actually gets updated
+    setTransitioningTo(null);
+  }, [pathname]);
+
   const dashboardPath = `/admin/events/${eventId}/dashboard`;
   const settingsPath = `${dashboardPath}/settings`;
 
@@ -65,19 +74,29 @@ export default function EventNav({ eventId, canEdit = false }: EventNavProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex space-x-1 py-3">
           {navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              pathname.startsWith(`${item.href}/`);
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isTransitioning = transitioningTo === item.href;
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`inline-flex items-center px-4 py-3 md:px-6 text-sm font-semibold rounded-lg transition-all duration-200 ${isActive
+                onClick={() => {
+                  if (!isActive) setTransitioningTo(item.href);
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-3 md:px-6 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                  isActive
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'text-gray-700 hover:bg-blue-50 hover:text-blue-600'
-                  }`}
+                }`}
               >
-                {item.icon}
+                {isTransitioning ? (
+                  <div className="-ml-1 mr-1">
+                    <LoadingSpinner size="sm" color={isActive ? 'white' : 'blue'} />
+                  </div>
+                ) : (
+                  item.icon
+                )}
                 {item.label}
               </Link>
             );

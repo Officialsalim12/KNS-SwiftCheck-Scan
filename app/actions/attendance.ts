@@ -2,7 +2,6 @@
 
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { revalidatePath } from 'next/cache';
-import { sendCheckInEmail, sendCheckOutEmail } from '@/lib/email';
 import { EventSession, getEventSession } from '@/app/actions/event-auth';
 
 const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -213,7 +212,7 @@ export async function processCheckInWithPhoto(participantId: string, photoDataUr
       return { error: 'You have already checked in today. Please check out first or wait until tomorrow.' };
     }
     
-    // Get participant info for email
+    // Get participant info
     const { data: participant } = await supabaseAdmin
       .from('participants')
       .select('name, email, event_id')
@@ -247,13 +246,6 @@ export async function processCheckInWithPhoto(participantId: string, photoDataUr
 
     if (checkinError) throw checkinError;
 
-    // Send email notification (don't fail if email fails)
-    if (participant?.email && participant?.name) {
-      sendCheckInEmail(participant.name, participant.email).catch((err) => {
-        console.error('Failed to send check-in email:', err);
-      });
-    }
-
     // Revalidate attendance and dashboard pages
     revalidatePath('/admin/attendance');
     revalidatePath(`/admin/events/${sessionContext.session.eventId}/dashboard`);
@@ -284,7 +276,7 @@ export async function processCheckInVerified(participantId: string) {
       return { error: 'You have already checked in today. Please check out first or wait until tomorrow.' };
     }
     
-    // Get participant info for email
+    // Get participant info
     const { data: participant } = await supabaseAdmin
       .from('participants')
       .select('name, email, event_id')
@@ -306,13 +298,6 @@ export async function processCheckInVerified(participantId: string) {
       });
 
     if (checkinError) throw checkinError;
-
-    // Send email notification (don't fail if email fails)
-    if (participant?.email && participant?.name) {
-      sendCheckInEmail(participant.name, participant.email).catch((err) => {
-        console.error('Failed to send check-in email:', err);
-      });
-    }
 
     // Revalidate attendance and dashboard pages
     revalidatePath('/admin/attendance');
@@ -410,13 +395,6 @@ export async function checkOut(identifier: string) {
 
       if (checkoutError) throw checkoutError;
 
-      // Send email notification (don't fail if email fails)
-      if (participant.email && participant.name) {
-        sendCheckOutEmail(participant.name, participant.email).catch((err) => {
-          console.error('Failed to send check-out email:', err);
-        });
-      }
-
       // Revalidate attendance and dashboard pages
       revalidatePath('/admin/attendance');
       revalidatePath(`/admin/events/${sessionContext.session.eventId}/dashboard`);
@@ -447,7 +425,8 @@ export async function getAttendanceLogs(eventId?: string) {
           id,
           name,
           email,
-          organization
+          organization,
+          id_number
         )
       `)
       .order('check_in_time', { ascending: false });
