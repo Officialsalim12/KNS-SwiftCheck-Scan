@@ -113,7 +113,31 @@ export default function ParticipantCard({ participant: initialParticipant }: Par
     const cleanedPhone = participant.phone.replace(/\D/g, '');
     
     // Construct message
-    const message = `Hello ${participant.name}, please click on the link below to download your QR code and keep it safely for your daily check-in and check-out throughout this event: ${participant.qr_code_url}`;
+    const message = `🎉 Congratulations!
+
+You have been selected for the KNS Digital Literacy Training Program. We are excited to have you join us!
+
+📋 Your Training Details:
+Participant ID: ${participant.id_number || 'N/A'}
+Cohort: 3
+Training Dates: Wednesday 22th - Tuesday 28th April 2026
+Location: 18 Dundas Street, Freetown
+Session Time: 10:00am
+
+🌐 Access the Learning Platform:
+https://elearning.kns.sl
+
+📱 Your QR Code for Attendance:
+${participant.qr_code_url}
+
+⚠️ Important: Please bring your QR code (printed or on your phone) on the day of training for attendance.
+
+If you have any questions, feel free to contact us on +23279422422
+
+We look forward to seeing you!
+
+Best regards,  
+KNS Training Team`;
     
     // WhatsApp URL
     const waUrl = `https://wa.me/${cleanedPhone}?text=${encodeURIComponent(message)}`;
