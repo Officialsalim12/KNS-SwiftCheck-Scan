@@ -14,6 +14,7 @@ interface Participant {
   created_at: string;
   id_number?: string;
   table_number?: number | null;
+  event_id: string;
 }
 
 interface ParticipantSearchProps {
