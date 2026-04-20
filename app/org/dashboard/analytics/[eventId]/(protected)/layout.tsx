@@ -1,5 +1,5 @@
 import { requireOrgEventAuth } from '@/app/actions/event-auth';
-import OrgAnalyticsLayout from '../layout_component'; // I'll rename the current layout to a component
+import AnalyticsClientLayout from '../AnalyticsClientLayout';
 
 export default async function AnalyticsProtectedLayout({
   children,
@@ -11,8 +11,8 @@ export default async function AnalyticsProtectedLayout({
   await requireOrgEventAuth(params.eventId);
   
   return (
-    <OrgAnalyticsLayout>
+    <AnalyticsClientLayout>
       {children}
-    </OrgAnalyticsLayout>
+    </AnalyticsClientLayout>
   );
 }
