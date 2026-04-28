@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({ subsets: ["latin"] });
+
 export const metadata: Metadata = {
-  title: "KNS SwiftCheck Scan",
-  description: "QR Code based attendance system for KNS Training",
+  title: "KNS SwiftCheck Scan | Smart Attendance Tracking",
+  description: "Modern QR Code-based attendance tracking platform for KNS Training and Events.",
 };
 
 export const viewport = {
@@ -21,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
         <ToastProvider>
           {children}
         </ToastProvider>
