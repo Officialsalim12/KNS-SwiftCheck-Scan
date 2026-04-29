@@ -352,8 +352,7 @@ export async function bulkCreateParticipantsFromFile(
               assignedFields.add(normalized);
             }
           } else if (isCriticalField && assignedFields.has(normalized)) {
-            // Skip this duplicate critical field - we already have the first one
-            console.log(`Skipping duplicate critical field "${normalized}" at column ${index + 1} (${rawHeader})`);
+            // Skip duplicate critical fields
           }
         }
       });
@@ -385,11 +384,6 @@ export async function bulkCreateParticipantsFromFile(
       return { error: 'File is empty or has no valid data' };
     }
 
-    // Debug: Log first row to help diagnose issues
-    if (rows.length > 0) {
-      console.log('First parsed row sample:', JSON.stringify(rows[0], null, 2));
-      console.log('All keys in first row:', Object.keys(rows[0]));
-    }
 
     const session = await getOrgSession();
     const orgPrefix = session ? getOrgPrefix(session.name) + '00' : null;
@@ -538,12 +532,6 @@ export async function bulkCreateParticipantsFromFile(
         let participant: any;
         let isUpdate = false;
 
-        // Debug: Log if participant is found (log all to help debug)
-        if (existingParticipant) {
-          console.log(`Row ${rowNum}: ✓ Found EXISTING participant - ID: "${existingParticipant.id_number}", Email: "${existingParticipant.email}" - Will UPDATE`);
-        } else {
-          console.log(`Row ${rowNum}: ✗ No existing participant found - Will CREATE NEW. ID: "${idNumberValue}", Email: "${emailValue}"`);
-        }
 
         if (existingParticipant) {
           // Update existing participant - only update fields that have new values
@@ -620,35 +608,20 @@ export async function bulkCreateParticipantsFromFile(
           }
         } else {
           // No existing participant found - CREATE NEW ONE
-          console.log(`Row ${rowNum}: Creating NEW participant - ID: "${idNumberValue}", Email: "${emailValue}", Name: "${nameValue}"`);
           
-          // Build insert object with only fields that have values (only use found fields)
-          // Allow same email for different participants - they're identified by ID number
-          const insertData: any = {
+          const insertData = {
             name: nameValue,
             email: emailValue,
-            event_id: eventId,
             id_number: idNumberValue,
+            event_id: eventId,
+            phone: phoneValue,
+            organization: organizationValue,
+            table_number: tableNumber,
           };
 
-          // Only add optional fields if they were found in the file and have values
-          if (phoneValue) {
-            insertData.phone = phoneValue;
-          }
-          if (organizationValue) {
-            insertData.organization = organizationValue;
-          }
-          if (tableNumber !== null) {
-            insertData.table_number = tableNumber;
-          }
-
-          // Insert participant
-          console.log(`Row ${rowNum}: ========== STARTING INSERT ==========`);
-          console.log(`Row ${rowNum}: Insert data:`, JSON.stringify(insertData, null, 2));
-          
           let newParticipant: any = null;
           let insertError: any = null;
-          
+
           try {
             const result = await supabaseAdmin
               .from('participants')
@@ -768,132 +741,54 @@ export async function bulkCreateParticipantsFromFile(
                     }
                   }
                 } else {
-                  // Duplicate exists in different event - we should still create it for this event
-                  // However, the database constraint on email prevents this
-                  // The user needs to run the migration to fix the constraint
-                  console.log(`Row ${rowNum}: ⚠ Duplicate email found in DIFFERENT event. Attempting to create participant for current event anyway...`);
-                  console.log(`Row ${rowNum}: Note: If this fails, you need to run the database migration: database/fix_participants_email_constraint.sql`);
-                  
-                  // Try to create the participant anyway - it will fail if constraint isn't fixed, but at least we try
-                  // The error will be caught and handled below
-                  const { data: newParticipantForEvent, error: insertErrorForEvent } = await supabaseAdmin
-                    .from('participants')
-                    .insert(insertData)
-                    .select()
-                    .single();
-                  
-                  if (newParticipantForEvent) {
-                    console.log(`Row ${rowNum}: ✓ Successfully created participant in current event despite duplicate in different event`);
-                    participant = newParticipantForEvent;
-                    isUpdate = false;
-                    
-                    // Generate QR code
-                    const qrPayload = idNumberValue || participant.id;
-                    const qrCodeUrl = await generateQRCode(qrPayload, participant.id);
-                    const { error: qrUpdateError } = await supabaseAdmin
-                      .from('participants')
-                      .update({ qr_code_url: qrCodeUrl })
-                      .eq('id', participant.id);
-                    if (!qrUpdateError) {
-                      participant.qr_code_url = qrCodeUrl;
-                    }
-                  } else if (insertErrorForEvent) {
-                    // Still failed due to constraint - provide helpful error
-                    console.log(`Row ${rowNum}: ✗ Still cannot create - database constraint prevents same email in different events`);
-                    console.log(`Row ${rowNum}: Please run migration: database/fix_participants_email_constraint.sql`);
-                    results.failed++;
-                    results.errors.push(`Row ${rowNum}: Cannot create participant - email "${emailValue}" exists in another event. Please run database migration to allow same email in different events.`);
-                    continue;
-                  }
+                  // Duplicate exists in different event
+                  results.failed++;
+                  results.errors.push(`Row ${rowNum}: Cannot create participant - email "${emailValue}" exists in another event.`);
+                  continue;
                 }
-              } else {
-                // Duplicate error but we couldn't find the participant in this event
-                // This could mean:
-                // 1. The duplicate is in a different event (which is allowed - same person can be in multiple events)
-                // 2. There's a database constraint issue
-                // 3. The participant exists but our search didn't find it
-                
-                // Try to get more info about the constraint violation
-                console.log(`Row ${rowNum}: Duplicate error but participant not found in event ${eventId}. Error: ${insertError.message}`);
-                
-                // Check if there's a unique constraint on id_number or email globally
-                // If so, we need to handle it differently
-                // For now, mark as failed with detailed error
-                results.failed++;
-                results.errors.push(`Row ${rowNum}: Duplicate entry detected. ID: "${idNumberValue}", Email: "${emailValue}". The participant may already exist in another event or there's a database constraint preventing creation.`);
-                continue;
               }
             } else {
-              // Other insert error
               results.failed++;
-              let errorMsg = insertError.message;
-              if (insertError.code === '23502') {
-                errorMsg = `Missing required field: ${insertError.message}`;
-              }
-              results.errors.push(`Row ${rowNum}: ${errorMsg}`);
+              results.errors.push(`Row ${rowNum}: ${insertError.message}`);
               continue;
             }
           } else if (newParticipant) {
-            // Insert was successful - create new participant
-            console.log(`Row ${rowNum}: ✓✓✓ Insert SUCCESS - Created participant with ID: ${newParticipant.id}, Name: ${newParticipant.name}`);
-            console.log(`Row ${rowNum}: Full participant data:`, JSON.stringify(newParticipant, null, 2));
             participant = newParticipant;
-            isUpdate = false; // Ensure this is set to false for new participants
+            isUpdate = false;
             
-            // Generate and upload QR code for newly created participants
             const qrPayload = idNumberValue || participant.id;
-            console.log(`Row ${rowNum}: Generating QR code with payload: ${qrPayload}`);
             const qrCodeUrl = await generateQRCode(qrPayload, participant.id);
 
-            // Update participant with QR code URL
             const { error: qrUpdateError } = await supabaseAdmin
               .from('participants')
               .update({ qr_code_url: qrCodeUrl })
               .eq('id', participant.id);
 
             if (qrUpdateError) {
-              console.log(`Row ${rowNum}: ✗ QR code generation failed:`, qrUpdateError.message);
               results.failed++;
-              results.errors.push(`Row ${rowNum}: Failed to generate QR code - ${qrUpdateError.message}`);
+              results.errors.push(`Row ${rowNum}: Failed to generate QR code`);
               continue;
             }
 
             participant.qr_code_url = qrCodeUrl;
-            console.log(`Row ${rowNum}: ✓ QR code generated and saved successfully`);
           } else {
-            // Neither error nor participant - this shouldn't happen
-            console.error(`Row ${rowNum}: ⚠ Unexpected state - insert returned no error but also no participant data`);
             results.failed++;
-            results.errors.push(`Row ${rowNum}: Failed to create participant - insert returned no data`);
+            results.errors.push(`Row ${rowNum}: Failed to create participant`);
             continue;
           }
         }
 
-        // Only count and add if we have a participant
         if (participant) {
           if (isUpdate) {
             results.updated++;
-            console.log(`Row ${rowNum}: ✓ Counted as UPDATED`);
           } else {
             results.success++;
-            console.log(`Row ${rowNum}: ✓ Counted as CREATED (success count: ${results.success})`);
           }
           results.participants.push(participant);
-          console.log(`Row ${rowNum}: ✓ Participant added to results array`);
-        } else {
-          // This shouldn't happen, but if it does, log it
-          console.error(`Row ${rowNum}: ✗✗✗ CRITICAL: No participant created or updated. This should not happen.`);
-          console.error(`Row ${rowNum}: State check - isUpdate: ${isUpdate}, participant exists: ${!!participant}`);
-          results.failed++;
-          results.errors.push(`Row ${rowNum}: Failed to create or update participant - no participant object was created`);
         }
-        console.log(`Row ${rowNum}: ========== FINISHED PROCESSING ROW ==========`);
       } catch (error: any) {
-        console.error(`Row ${rowNum}: ✗✗✗ EXCEPTION CAUGHT:`, error);
-        console.error(`Row ${rowNum}: Exception stack:`, error.stack);
         results.failed++;
-        const errorDetails = error.message || error.toString() || 'Unknown error';
-        results.errors.push(`Row ${rowNum}: Exception - ${errorDetails}. Data: name="${nameValue}", email="${emailValue}", id_number="${idNumberValue}"`);
+        results.errors.push(`Row ${rowNum}: Exception - ${error.message || 'Unknown error'}`);
       }
     }
 
@@ -910,7 +805,7 @@ export async function bulkCreateParticipantsFromFile(
     };
   } catch (error: any) {
     console.error('Error bulk creating participants:', error);
-    return { error: error.message || 'Failed to process file' };
+    return { error: 'Failed to process file' };
   }
 }
 

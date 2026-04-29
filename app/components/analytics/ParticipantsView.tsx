@@ -14,7 +14,7 @@ export default function ParticipantsView({
 }: Props) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 px-4 py-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header Section */}
         <div className="mb-6 md:mb-8">
           <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
@@ -36,20 +36,6 @@ export default function ParticipantsView({
                 href={`${dashboardPath}/add-participant`}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl font-semibold"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
                 Add Participant
               </Link>
             </div>
@@ -60,20 +46,8 @@ export default function ParticipantsView({
         {!participants || participants.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-xl p-12 text-center border border-gray-100">
             <div className="max-w-md mx-auto">
-              <div className="mb-6">
-                <svg
-                  className="mx-auto h-24 w-24 text-gray-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                  />
-                </svg>
+              <div className="mb-6 px-4 py-2 bg-gray-100 text-gray-500 rounded-full inline-block font-black text-xs uppercase tracking-widest">
+                None
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-3">No participants yet</h3>
               <p className="text-gray-600 mb-6">
@@ -83,20 +57,6 @@ export default function ParticipantsView({
                 href={`${dashboardPath}/add-participant`}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl font-semibold"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
                 Add Your First Participant
               </Link>
             </div>

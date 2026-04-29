@@ -13,7 +13,7 @@ export default function AttendanceView({ logs, event, dashboardPath, error }: Pr
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 px-4 py-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-[1600px] mx-auto">
           <div className="bg-red-50 border-l-4 border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-md">
             <p className="font-semibold">Error loading attendance</p>
             <p className="text-sm mt-1">{error}</p>
@@ -25,21 +25,20 @@ export default function AttendanceView({ logs, event, dashboardPath, error }: Pr
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 border border-gray-100">
-            
+        <div className="mb-6 md:mb-8">
+          <div className="bg-white rounded-2xl shadow-xl p-5 md:p-8 border border-gray-100">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+                <h1 className="text-2xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-1">
                   Attendance Logs
                 </h1>
-                <p className="text-gray-600 text-lg">
-                  Track and monitor participant attendance records
+                <p className="text-gray-500 text-sm md:text-lg">
+                  Track participant records in real-time
                 </p>
                 {logs && logs.length > 0 && (
-                  <p className="text-sm text-gray-500 mt-2">
+                  <p className="text-xs md:text-sm text-gray-400 mt-2">
                     Total records: <span className="font-semibold text-blue-600">{logs.length}</span>
                   </p>
                 )}

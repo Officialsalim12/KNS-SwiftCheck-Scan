@@ -1,8 +1,10 @@
 import { checkAdminAuth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
-import { logout } from '@/app/actions/auth';
 import Link from 'next/link';
+import { Home } from 'lucide-react';
 import Image from 'next/image';
+import LogoutButton from '@/app/components/ui/LogoutButton';
+import BottomNav from '@/app/components/BottomNav';
 
 export default async function AdminLayout({
   children,
@@ -17,9 +19,9 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      {/* Sleek Profile Header */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border-b border-gray-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex flex-col">
+      {/* Sleek Profile Header - Desktop Only */}
+      <header className="hidden md:block sticky top-0 z-50 bg-white/80 backdrop-blur-md shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] border-b border-gray-100 flex-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex justify-between items-center">
             
@@ -33,7 +35,7 @@ export default async function AdminLayout({
                   className="object-contain"
                 />
               </Link>
-              <Link href="/admin" className="hidden sm:flex flex-col justify-center hover:opacity-80 transition-opacity">
+              <Link href="/admin" className="flex flex-col justify-center hover:opacity-80 transition-opacity">
                 <span className="text-[9px] md:text-[11px] font-extrabold text-blue-900 tracking-wider uppercase leading-none mb-1">Knowledge</span>
                 <span className="text-[9px] md:text-[11px] font-extrabold text-blue-800 tracking-wider uppercase leading-none mb-1">Network</span>
                 <span className="text-[9px] md:text-[11px] font-extrabold text-blue-700 tracking-wider uppercase leading-none">Solution</span>
@@ -55,27 +57,35 @@ export default async function AdminLayout({
               
               <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
               
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-300"
-                  title="Sign Out"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                </button>
-              </form>
+              <LogoutButton type="system" />
             </div>
             
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto pb-12 pt-6 px-4 sm:px-6 lg:px-8">
-        {children}
+      {/* Mobile Top Bar - Fixed to Top */}
+      <header className="md:hidden bg-white/80 backdrop-blur-md border-b border-gray-100 fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between h-[56px]">
+        <Link href="/admin" className="flex items-center gap-2">
+          <div className="p-2 bg-blue-50 rounded-lg">
+            <Home className="w-5 h-5 text-blue-900" />
+          </div>
+          <span className="text-lg font-black text-blue-900 tracking-tight">KNS <span className="text-blue-600">SCAN</span></span>
+        </Link>
+        <div className="text-right">
+          <p className="text-[10px] font-bold text-blue-600 uppercase leading-none">System Admin</p>
+          <p className="text-xs font-black text-gray-900 leading-tight">Master Terminal</p>
+        </div>
+      </header>
+
+      {/* Main Content with padding for fixed header and footer */}
+      <main className="flex-1 pt-[56px] pb-[72px] md:pt-6 md:pb-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {children}
+        </div>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

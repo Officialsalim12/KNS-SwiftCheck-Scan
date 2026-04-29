@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/app/actions/auth';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Home } from 'lucide-react';
+import Link from 'next/link';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -27,6 +28,13 @@ export default function AdminLogin() {
 
   return (
     <div className="min-h-screen flex bg-gray-50 font-sans">
+      <div className="absolute top-6 left-6 sm:top-8 sm:left-8 z-50">
+        <Link href="/" className="flex items-center gap-2 px-3 py-2 bg-white/80 hover:bg-white backdrop-blur-md rounded-xl border border-gray-200 transition-all group shadow-sm">
+          <Home className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
+          <span className="text-sm font-bold text-gray-600 group-hover:text-blue-600 transition-colors">Home</span>
+        </Link>
+      </div>
+
       {/* Left Side: Form Container */}
       <div className="w-full lg:w-[45%] flex flex-col relative bg-white shadow-[20px_0_40px_-10px_rgba(0,0,0,0.05)] z-20 overflow-y-auto">
         <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 md:px-16 lg:px-20 py-16">

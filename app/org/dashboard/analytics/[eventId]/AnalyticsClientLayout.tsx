@@ -42,19 +42,19 @@ export default function AnalyticsClientLayout({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </Link>
-              <h2 className="text-xl font-bold text-gray-900">Event Analytics</h2>
+              <h2 className="sr-only">Event Analytics</h2>
             </div>
             
             {!isLoginPage && (
-              <div className="flex items-center gap-4">
-                <nav className="flex gap-1">
+              <div className="flex-1 ml-2 md:ml-4 overflow-x-auto no-scrollbar">
+                <nav className="flex gap-1 w-full">
                   {tabs.map((tab) => (
                     <Link
                       key={tab.name}
                       href={tab.href}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+                      className={`flex-1 text-center px-2 py-2 text-[10px] font-black rounded-lg transition-all uppercase tracking-widest whitespace-nowrap ${
                         tab.active
-                          ? 'bg-blue-50 text-blue-600'
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
                           : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                       }`}
                     >

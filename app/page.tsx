@@ -37,7 +37,7 @@ export default function Home() {
             SWIFTCHECK <span className="text-blue-600">SCAN</span>
           </h1>
           <p className="text-xl md:text-2xl text-gray-700 mb-10 max-w-3xl mx-auto font-medium leading-relaxed">
-            Elevate your event experience with our next-generation QR scanning ecosystem.
+            Elevate your event experience with our next generation QR scanning ecosystem.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
@@ -45,12 +45,6 @@ export default function Home() {
               className="w-full sm:w-auto px-8 py-4 bg-blue-600 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-blue-500/40 hover:bg-blue-700 transition-all transform hover:scale-105 active:scale-95"
             >
               Start Free Trial
-            </Link>
-            <Link
-              href="#features"
-              className="md:hidden w-full sm:w-auto px-8 py-4 glass text-blue-900 rounded-2xl font-bold text-lg border border-blue-200 hover:bg-white/50 transition-all text-center"
-            >
-              View Features
             </Link>
           </div>
         </div>
@@ -136,7 +130,7 @@ export default function Home() {
             href="/register"
             className="inline-block px-10 py-5 bg-blue-600 text-white rounded-2xl font-bold text-xl shadow-2xl shadow-blue-500/40 hover:bg-blue-700 transition-all transform hover:scale-105 active:scale-95"
           >
-            Get Started Now — It's Free
+            Get Started Now. It's Free
           </Link>
         </div>
       </main>

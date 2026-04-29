@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +19,7 @@ body {
   background: var(--background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @layer utilities {
@@ -43,5 +44,34 @@ body {
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500;
   }
+
+  .mobile-nav-item {
+    @apply flex flex-col items-center justify-center gap-1 text-[10px] font-bold transition-all duration-200 active:scale-90 flex-1 h-full min-w-[64px];
+  }
+
+  .mobile-nav-active {
+    @apply text-blue-600;
+  }
+
+  .mobile-nav-inactive {
+    @apply text-gray-400 hover:text-gray-600;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 

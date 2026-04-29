@@ -7,7 +7,7 @@ import { checkIn, processCheckInWithPhoto, processCheckInVerified } from '@/app/
 import { motion, AnimatePresence } from 'framer-motion';
 import PhotoCapture from '@/app/components/PhotoCapture';
 import VerificationModal from '@/app/components/VerificationModal';
-import LogoHeader from '@/app/components/LogoHeader';
+import BottomNav from '@/app/components/BottomNav';
 import { pickCameraIdByPreference, detectCameraFacing, CameraFacing } from '@/lib/cameraHelpers';
 import { updateEventLocation } from '@/app/actions/event-auth';
 
@@ -403,37 +403,12 @@ export default function CheckInPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
       <div className="container mx-auto px-4 py-8">
-        <LogoHeader />
         <div className="max-w-2xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-xl shadow-xl p-5 md:p-8 border-2 border-blue-200"
           >
-            {eventId && (
-              <div className="mb-4">
-                <Link
-                  href={isOrg ? `/org/dashboard/analytics/${eventId}` : `/admin/events/${eventId}/dashboard`}
-                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10 19l-7-7m0 0l7-7m-7 7h18"
-                    />
-                  </svg>
-                  Return to Dashboard
-                </Link>
-              </div>
-            )}
             <h1 className="text-3xl md:text-4xl font-bold text-center mb-2 text-blue-600">
               Check In
             </h1>
@@ -454,7 +429,7 @@ export default function CheckInPage() {
 
             {isProcessing && !showPhotoCapture && !showVerification && (
               <div className="mb-6 p-4 bg-blue-50 border-2 border-blue-300 text-blue-800 rounded-lg text-center">
-                <p className="font-semibold text-lg">Processing check-in...</p>
+                <p className="font-semibold text-lg">Processing check in...</p>
               </div>
             )}
 
@@ -659,6 +634,8 @@ export default function CheckInPage() {
           isProcessing={isProcessing}
         />
       )}
+
+      <BottomNav explicitEventId={eventId} explicitIsOrg={isOrg} />
     </div>
   );
 }

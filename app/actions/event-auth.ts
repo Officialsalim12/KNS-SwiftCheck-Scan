@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 
 import { getEventById, verifyEventCredentials } from './events';
 import { checkAdminAuth } from '@/lib/auth';
+import { getOrgSession } from '@/lib/org-auth';
 
 const EVENT_SESSION_COOKIE = 'event_session';
 
@@ -78,9 +79,20 @@ export async function checkEventAuth(eventId: string): Promise<boolean> {
   const session = await getEventSession();
   if (session?.eventId === eventId) return true;
   
-  // Global Admin pass-through override
+  // 1. Global Admin pass-through override
   const isAdmin = await checkAdminAuth();
-  return isAdmin;
+  if (isAdmin) return true;
+
+  // 2. Organization Owner pass-through override
+  const orgSession = await getOrgSession();
+  if (orgSession) {
+    const { data: event } = await getEventById(eventId);
+    if (event && event.organization_id === orgSession.orgId) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 export async function requireEventAuth(eventId: string) {
