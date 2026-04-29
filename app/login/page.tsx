@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { login } from '@/app/actions/auth';
 import { Eye, EyeOff, Home } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -114,11 +115,13 @@ export default function AdminLogin() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
 
         <div className="relative z-10 w-full max-w-xl xl:max-w-2xl transform transition-transform duration-700 hover:scale-[1.02]">
-          <img 
+          <Image 
             src="/login-illustration.png" 
             alt="Login Illustration" 
+            width={1200}
+            height={800}
             className="w-full h-auto drop-shadow-2xl object-contain mx-auto" 
-            onError={(e) => { e.currentTarget.style.display='none'; }} 
+            priority
           />
         </div>
         

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Image from 'next/image';
 import EditParticipantModal from './EditParticipantModal';
 import { useToast } from '@/lib/ToastContext';
 
@@ -161,9 +162,11 @@ KNS Training Team`;
         {participant.photo_url ? (
           <div className="flex flex-col items-center">
             <div className="flex justify-center mb-3">
-              <img
+              <Image
                 src={participant.photo_url}
                 alt={participant.name}
+                width={80}
+                height={80}
                 className="w-20 h-20 object-cover rounded-full border-4 border-white shadow-xl"
               />
             </div>
@@ -183,7 +186,7 @@ KNS Training Team`;
         {participant.qr_code_url && (
           <div className="flex flex-col items-center mb-6 pb-6 border-b border-gray-200">
             <div className="bg-white p-3 rounded-lg shadow-md mb-4">
-              <img
+              <Image
                 src={participant.qr_code_url}
                 alt={`QR Code for ${participant.name}`}
                 width={180}

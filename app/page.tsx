@@ -130,7 +130,7 @@ export default function Home() {
             href="/register"
             className="inline-block px-10 py-5 bg-blue-600 text-white rounded-2xl font-bold text-xl shadow-2xl shadow-blue-500/40 hover:bg-blue-700 transition-all transform hover:scale-105 active:scale-95"
           >
-            Get Started Now. It's Free
+            Get Started Now. It&apos;s Free
           </Link>
         </div>
       </main>

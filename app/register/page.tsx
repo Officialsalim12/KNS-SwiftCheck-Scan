@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { login, logout } from '@/app/actions/auth';
 import { registerOrganization, loginOrganization } from '@/app/actions/organizations';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Eye, EyeOff, Home } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -93,18 +94,22 @@ export default function RegisterPage() {
         <div className="relative z-10 w-full max-w-xl xl:max-w-2xl transform transition-transform duration-700 hover:scale-[1.02]">
           {/* PLACEHOLDER for User's attached images. */}
           {userMode === 'register' && activeTab === 'user' ? (
-            <img 
+            <Image 
               src="/register-illustration.png" 
               alt="Registration Illustration" 
+              width={1200}
+              height={800}
               className="w-full h-auto drop-shadow-2xl object-contain mx-auto" 
-              onError={(e) => { e.currentTarget.style.display='none'; }} 
+              priority
             />
           ) : (
-            <img 
+            <Image 
               src="/login-illustration.png" 
               alt="Login Platform Illustration" 
+              width={1200}
+              height={800}
               className="w-full h-auto drop-shadow-2xl object-contain mx-auto" 
-              onError={(e) => { e.currentTarget.style.display='none'; }} 
+              priority
             />
           )}
         </div>

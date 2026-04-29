@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface VerificationModalProps {
   participant: {
@@ -39,9 +40,11 @@ export default function VerificationModal({
           {participant.photo_url ? (
             <div className="flex flex-col items-center">
               <div className="relative mb-4">
-                <img
+                <Image
                   src={participant.photo_url}
                   alt={participant.name}
+                  width={192}
+                  height={192}
                   className="w-48 h-48 object-cover rounded-lg border-4 border-blue-500 shadow-lg"
                 />
               </div>
